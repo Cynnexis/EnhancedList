@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="EnhancedList:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/EnhancedList_jar</output-path>
+    <root id="archive" name="EnhancedList.jar">
+      <element id="module-output" name="EnhancedList" />
+    </root>
+  </artifact>
+</component>
