@@ -30,9 +30,8 @@ public class Point extends Couple<Integer, Integer> implements Serializable {
 	/* OVERRIDES */
 	@Override
 	public String toString() {
-		return "Point{" +
-				"x=" + (getX() != null ? getX().toString() : "(null)") +
-				", y=" + (getY() != null ? getY().toString() : "(null)") +
-				'}';
+		return "(" + (getX() != null ? getX().toString() : "(null)") +
+				" ; " + (getY() != null ? getY().toString() : "(null)") +
+				')';
 	}
 }

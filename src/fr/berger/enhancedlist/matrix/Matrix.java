@@ -1,6 +1,7 @@
-package fr.berger.enhancedlist;
+package fr.berger.enhancedlist.matrix;
 
 import com.sun.istack.internal.NotNull;
+import fr.berger.enhancedlist.Point;
 
 import java.io.Serializable;
 import java.util.ArrayList;
