@@ -14,4 +14,11 @@ public class Tree<T> extends Node<T> implements Serializable, Iterable<Node<T>> 
 	public Tree() {
 		super();
 	}
+	
+	/* OVERRIDE */
+	
+	@Override
+	public String toString() {
+		return super.toString();
+	}
 }

@@ -10,6 +10,8 @@ import java.util.Objects;
 
 public class Node<T> implements Serializable, Iterable<Node<T>> {
 	
+	// TODO: Add field 'id' and 'tag'. See https://en.wikipedia.org/wiki/Universally_unique_identifier
+	
 	@Nullable
 	private T data;
 	@Nullable
@@ -166,7 +168,6 @@ public class Node<T> implements Serializable, Iterable<Node<T>> {
 	public String toString() {
 		return "Node{" +
 				"data=" + data +
-				", parent=" + parent +
 				", children=" + children +
 				'}';
 	}
