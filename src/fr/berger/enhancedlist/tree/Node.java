@@ -12,31 +12,49 @@ public class Node<T> implements Serializable, Iterable<Node<T>> {
 	
 	@Nullable
 	private T data;
+	@Nullable
+	private Node<T> parent;
 	@NotNull
 	private ArrayList<Node<T>> children;
 	
 	/* CONSTRUCTORS */
 	
+	public Node(@Nullable T data, @Nullable Node<T> parent, @NotNull ArrayList<Node<T>> children) {
+		setData(data);
+		setParent(parent);
+		setChildren(children);
+	}
 	public Node(@Nullable T data, @NotNull ArrayList<Node<T>> children) {
 		setData(data);
+		setParent(null);
 		setChildren(children);
+	}
+	public Node(@Nullable T data, @Nullable Node<T> parent) {
+		setData(data);
+		setParent(parent);
+		setChildren(new ArrayList<>());
 	}
 	public Node(@Nullable T data) {
 		setData(data);
+		setParent(null);
 		setChildren(new ArrayList<>());
 	}
 	public Node() {
 		setData(null);
+		setParent(null);
 		setChildren(new ArrayList<>());
 	}
 	
 	/* OTHER METHODS */
 	
 	public void addChild(@Nullable Node<T> child) {
+		if (child != null)
+			child.setParent(this);
+		
 		getChildren().add(child);
 	}
 	public void addChild(@Nullable T data) {
-		Node<T> n = new Node<>(data);
+		Node<T> n = new Node<>(data, this);
 		getChildren().add(n);
 	}
 	
@@ -96,6 +114,14 @@ public class Node<T> implements Serializable, Iterable<Node<T>> {
 		this.data = data;
 	}
 	
+	public @Nullable Node<T> getParent() {
+		return parent;
+	}
+	
+	public void setParent(@Nullable Node<T> parent) {
+		this.parent = parent;
+	}
+	
 	public @NotNull ArrayList<Node<T>> getChildren() {
 		if (this.children == null)
 			this.children = new ArrayList<>();
@@ -140,6 +166,7 @@ public class Node<T> implements Serializable, Iterable<Node<T>> {
 	public String toString() {
 		return "Node{" +
 				"data=" + data +
+				", parent=" + parent +
 				", children=" + children +
 				'}';
 	}
@@ -158,11 +185,12 @@ public class Node<T> implements Serializable, Iterable<Node<T>> {
 		Node<?> node = (Node<?>) o;
 		
 		return Objects.equals(data, node.data) &&
+				Objects.equals(parent, node.parent) &&
 				Objects.equals(children, node.children);
 	}
 	
 	@Override
 	public int hashCode() {
-		return Objects.hash(data, children);
+		return Objects.hash(data, parent, children);
 	}
 }

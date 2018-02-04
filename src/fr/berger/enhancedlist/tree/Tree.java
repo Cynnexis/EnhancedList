@@ -8,8 +8,10 @@ public class Tree<T> extends Node<T> implements Serializable, Iterable<Node<T>> 
 	public Tree(T data, ArrayList<Node<T>> children) {
 		super(data, children);
 	}
-	
 	public Tree(T data) {
 		super(data);
+	}
+	public Tree() {
+		super();
 	}
 }
