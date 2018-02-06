@@ -5,6 +5,7 @@ import fr.berger.enhancedlist.Point;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Objects;
 
 /**
  * The matrix class is a sort or 2-dimensional ArrayList. It can contains a table of m*n elements by using an
@@ -200,6 +201,32 @@ public class Matrix<T> implements Serializable {
 			public void OnCellChanged(int x, int y, T value) { }
 			@Override
 			public void OnCellRead(int x, int y, T value) { }
-		};;
+		};
+	}
+	
+	/* OVERRIDES */
+	
+	@Override
+	public String toString() {
+		return "Matrix{" +
+				"matrix=" + matrix +
+				", nbColumns=" + nbColumns +
+				", nbRows=" + nbRows +
+				'}';
+	}
+	
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof Matrix)) return false;
+		Matrix<?> matrix1 = (Matrix<?>) o;
+		return getNbColumns() == matrix1.getNbColumns() &&
+				getNbRows() == matrix1.getNbRows() &&
+				Objects.equals(getMatrix(), matrix1.getMatrix());
+	}
+	
+	@Override
+	public int hashCode() {
+		return Objects.hash(getMatrix(), getNbColumns(), getNbRows());
 	}
 }
