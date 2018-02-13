@@ -1,73 +1,64 @@
 package fr.berger.enhancedlist.lexicon;
 
 import com.sun.istack.internal.NotNull;
+import com.sun.istack.internal.Nullable;
 import fr.berger.enhancedlist.Couple;
 
 import java.io.Serializable;
+import java.lang.reflect.Array;
 import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
-import java.util.stream.Stream;
+import java.util.function.*;
 
 // http://server2client.com/images/collectionhierarchy.jpg
 // https://docs.oracle.com/javase/tutorial/collections/custom-implementations/index.html
 
-public class Lexicon<T> extends AbstractList<T> implements Serializable, Iterable<T>, List<T>, RandomAccess, Cloneable {
+public class Lexicon<T> extends AbstractCollection<T> implements Serializable {
 	
 	@NotNull
 	private T[] array;
 	
 	@NotNull
-	private ArrayList<LexiconListener<T>> lexiconListeners = new ArrayList<>(0);
+	private transient ArrayList<LexiconListener<T>> lexiconListeners = new ArrayList<>();
+	@NotNull
+	private transient Class<T> clazz;
 	private boolean acceptDuplicates = true;
 	private boolean acceptNullValues = true;
 	private boolean automaticSort = false;
 	private boolean synchronizedAccess = false;
 	
+	private int actualSize = 0;
+	
+	// TODO: Implement a way to make this list persistent (aka: survive after the program exit)
 	
 	/* CONSTRUCTORS */
 	
 	/**
 	 * Constructs an empty list with the specified initial capacity.
 	 *
-	 * @param initialCapacity the initial capacity of the list
 	 * @throws IllegalArgumentException if the specified initial capacity
 	 *                                  is negative
 	 */
-	public Lexicon(int initialCapacity) {
-		super();
-	}
-	
-	/**
-	 * Constructs an empty list with an initial capacity of 0.
-	 */
 	public Lexicon() {
-		super(0);
 	}
-	
-	@Override
-	public int size() {
-		return 0;
+	public Lexicon(@NotNull Class<T> clazz) {
+		setClazz(clazz);
 	}
-	
-	/**
-	 * Constructs a list containing the elements of the specified
-	 * collection, in the order they are returned by the collection's
-	 * iterator.
-	 *
-	 * @param c the collection whose elements are to be placed into this list
-	 * @throws NullPointerException if the specified collection is null
-	 */
-	public Lexicon(Collection<? extends T> c) {
-		super(c);
+	public Lexicon(@NotNull Class<T> clazz, int initialCapacity) {
+		setClazz(clazz);
+		growCapacity(initialCapacity);
+	}
+	public <U extends T> Lexicon(@Nullable U element) {
+		add(element);
+	}
+	public Lexicon(@Nullable Collection<? extends T> elements) {
+		addAll(elements);
 	}
 	
 	
 	/* METHODS */
 	
 	// Is There Null Element
-	public static boolean isThereNullElement(@NotNull AbstractList<?> list) {
+	public static boolean isThereNullElement(@NotNull Lexicon<?> list) {
 		if (list == null)
 			throw new NullPointerException();
 		
@@ -84,7 +75,7 @@ public class Lexicon<T> extends AbstractList<T> implements Serializable, Iterabl
 	}
 	
 	// Find Null Elements
-	public static ArrayList<Integer> findNullElements(@NotNull AbstractList<?> list) {
+	public static ArrayList<Integer> findNullElements(@NotNull Lexicon<?> list) {
 		if (list == null)
 			throw new NullPointerException();
 		
@@ -97,27 +88,8 @@ public class Lexicon<T> extends AbstractList<T> implements Serializable, Iterabl
 		return indexes;
 	}
 	
-	// Count Null Elements
-	public static int countNullElements(@NotNull AbstractList<?> list) {
-		if (list == null)
-			throw new NullPointerException();
-		
-		int counter = 0;
-		
-		for (int i = 0; i < list.size(); i++) {
-			if (list.get(i) == null) {
-				counter++;
-			}
-		}
-		
-		return counter;
-	}
-	public int countNullElements() {
-		return countNullElements(this);
-	}
-	
 	// Delete Null Elements
-	public static void deleteNullElement(@NotNull AbstractList<?> list) {
+	public static void deleteNullElement(@NotNull Lexicon<?> list) {
 		if (list == null)
 			throw new NullPointerException();
 		
@@ -132,11 +104,25 @@ public class Lexicon<T> extends AbstractList<T> implements Serializable, Iterabl
 		deleteNullElement(this);
 	}
 	
-	public static @NotNull ArrayList<Couple<Integer, Integer>> findDuplications(@NotNull AbstractList<?> list) {
+	public static boolean isThereDuplicates(@NotNull Lexicon<?> list) {
+		boolean duplicateFound = false;
+		
+		for (int i = 0; i < list.size()-1 && !duplicateFound; i++)
+			for (int j = i+1; j < list.size() && !duplicateFound; j++)
+				if (Objects.equals(list.get(i), list.get(j)))
+					duplicateFound = true;
+		
+		return duplicateFound;
+	}
+	public boolean isThereDuplicates() {
+		return isThereDuplicates(this);
+	}
+	
+	public static @NotNull ArrayList<Couple<Integer, Integer>> findDuplications(@NotNull Lexicon<?> list) {
 		ArrayList<Couple<Integer, Integer>> counter = new ArrayList<>(0);
 		
-		for (int i = 0; i < list.size(); i++)
-			for (int j = 0; j < list.size(); j++)
+		for (int i = 0; i < list.size()-1; i++)
+			for (int j = i+1; j < list.size(); j++)
 				if (Objects.equals(list.get(i), list.get(j)))
 					counter.add(new Couple<>(i, j));
 		
@@ -146,7 +132,7 @@ public class Lexicon<T> extends AbstractList<T> implements Serializable, Iterabl
 		return findDuplications(this);
 	}
 	
-	public static void deleteDuplications(@NotNull AbstractList<?> list) {
+	public static void deleteDuplications(@NotNull Lexicon<?> list) {
 		for (int i = 0; i < list.size() - 1; i++) {
 			for (int j = i+1; j < list.size(); j++) {
 				if (Objects.equals(list.get(i), list.get(j))) {
@@ -160,13 +146,117 @@ public class Lexicon<T> extends AbstractList<T> implements Serializable, Iterabl
 		deleteDuplications(this);
 	}
 	
+	public int checkCapacity(int newCapacity) {
+		if (newCapacity > capacity())
+			return growCapacity(newCapacity);
+		
+		return capacity();
+	}
+	
+	public int trimToSize() {
+		if (size() < capacity()) {
+			array = Arrays.copyOf(array, size());
+		}
+		
+		return capacity();
+	}
+	
+	public int growCapacity(int newCapacity) {
+		if (!checkArrayNullity()) {
+			try {
+				array = (T[]) new Object[0];
+			} catch (ClassCastException ex) {
+				ex.printStackTrace();
+			}
+		}
+		
+		if (newCapacity > capacity()) {
+			array = Arrays.copyOf(array, newCapacity);
+		}
+		
+		return capacity();
+	}
+	public int growCapacity() {
+		return growCapacity(size() + 1);
+	}
+	
+	public int capacity() {
+		if (!checkArrayNullity())
+			return 0;
+		
+		return array.length;
+	}
+	
+	private boolean checkArrayNullity() {
+		if (array == null) {
+			if (getClazz() != null) {
+				try {
+					array = (T[]) Array.newInstance(getClazz(), 0);
+					return true;
+				} catch (ClassCastException ex) {
+					return false;
+				}
+			}
+			else
+				return false;
+		}
+		else
+			return true;
+	}
+	
+	public T get(int index) {
+		if (!checkArrayNullity())
+			return null;
+		
+		checkIndex(index);
+		
+		return array[index];
+	}
+	
+	public T set(int index, @Nullable T element) {
+		checkIndex(index);
+		
+		if (!isAcceptNullValues() && element == null)
+			return null;
+		
+		if (!isAcceptDuplicates() && contains(element))
+			return null;
+		
+		if (getClazz() == null)
+			setClazz((Class<T>) element.getClass());
+		
+		T oldValue = get(index);
+		array[index] = element;
+		
+		return oldValue;
+	}
+	
+	public void checkIndex(int index) {
+		if (!(0 <= index && index < size()))
+			throw new ArrayIndexOutOfBoundsException();
+	}
+	
+	public boolean addAll(T[] list) {
+		if (list == null)
+			return true;
+		
+		boolean problem = false;
+		
+		for (T t : list) {
+			if (!add(t))
+				problem = true;
+		}
+		
+		return !problem;
+	}
+	
 	
 	/* GETTERS & SETTERS */
 	
 	public @NotNull ArrayList<LexiconListener<T>> getLexiconListeners() {
 		// If the attribute is null, create a new instance
 		if (this.lexiconListeners == null)
-			this.lexiconListeners = new ArrayList<>(0);
+			this.lexiconListeners = new ArrayList<>();
 		
 		// Remove 'null' instances
 		deleteNullElement();
@@ -182,12 +272,23 @@ public class Lexicon<T> extends AbstractList<T> implements Serializable, Iterabl
 			throw new NullPointerException();
 		
 		// Remove 'null' instances
-		deleteNullElement(lexiconListeners);
+		//deleteNullElement(lexiconListeners);
 		
 		// Remove duplicates elements
-		deleteDuplications(lexiconListeners);
+		//deleteDuplications(lexiconListeners);
 		
 		this.lexiconListeners = lexiconListeners;
+	}
+	
+	public @NotNull Class<T> getClazz() {
+		return clazz;
+	}
+	
+	public void setClazz(@NotNull Class<T> clazz) {
+		if (clazz == null)
+			throw new NullPointerException();
+		
+		this.clazz = clazz;
 	}
 	
 	public boolean isAcceptDuplicates() {
@@ -225,141 +326,26 @@ public class Lexicon<T> extends AbstractList<T> implements Serializable, Iterabl
 	/* OVERRIDES */
 	
 	/**
-	 * Removes all of the elements of this collection that satisfy the given
-	 * predicate.  Errors or runtime exceptions thrown during iteration or by
-	 * the predicate are relayed to the caller.
+	 * Returns an iterator over the elements contained in this collection.
 	 *
-	 * @param filter a predicate which returns {@code true} for elements to be
-	 *               removed
-	 * @return {@code true} if any elements were removed
-	 * @throws NullPointerException          if the specified filter is null
-	 * @throws UnsupportedOperationException if elements cannot be removed
-	 *                                       from this collection.  Implementations may throw this exception if a
-	 *                                       matching element cannot be removed or if, in general, removal is not
-	 *                                       supported.
-	 * @implSpec The default implementation traverses all elements of the collection using
-	 * its {@link #iterator}.  Each matching element is removed using
-	 * {@link Iterator#remove()}.  If the collection's iterator does not
-	 * support removal then an {@code UnsupportedOperationException} will be
-	 * thrown on the first matching element.
-	 * @since 1.8
+	 * @return an iterator over the elements contained in this collection
 	 */
 	@Override
-	public boolean removeIf(Predicate<? super T> filter) {
-		return false;
-	}
-	
-	/**
-	 * Replaces each element of this list with the result of applying the
-	 * operator to that element.  Errors or runtime exceptions thrown by
-	 * the operator are relayed to the caller.
-	 *
-	 * @param operator the operator to apply to each element
-	 * @throws UnsupportedOperationException if this list is unmodifiable.
-	 *                                       Implementations may throw this exception if an element
-	 *                                       cannot be replaced or if, in general, modification is not
-	 *                                       supported
-	 * @throws NullPointerException          if the specified operator is null or
-	 *                                       if the operator result is a null value and this list does
-	 *                                       not permit null elements
-	 *                                       (<a href="Collection.html#optional-restrictions">optional</a>)
-	 * @implSpec The default implementation is equivalent to, for this {@code list}:
-	 * <pre>{@code
-	 *     final ListIterator<E> li = list.listIterator();
-	 *     while (li.hasNext()) {
-	 *         li.set(operator.apply(li.next()));
-	 *     }
-	 * }</pre>
-	 * <p>
-	 * If the list's list-iterator does not support the {@code set} operation
-	 * then an {@code UnsupportedOperationException} will be thrown when
-	 * replacing the first element.
-	 * @since 1.8
-	 */
-	@Override
-	public void replaceAll(UnaryOperator<T> operator) {
-	
-	}
-	
-	/**
-	 * Sorts this list according to the order induced by the specified
-	 * {@link Comparator}.
-	 * <p>
-	 * <p>All elements in this list must be <i>mutually comparable</i> using the
-	 * specified comparator (that is, {@code c.compare(e1, e2)} must not throw
-	 * a {@code ClassCastException} for any elements {@code e1} and {@code e2}
-	 * in the list).
-	 * <p>
-	 * <p>If the specified comparator is {@code null} then all elements in this
-	 * list must implement the {@link Comparable} interface and the elements'
-	 * {@linkplain Comparable natural ordering} should be used.
-	 * <p>
-	 * <p>This list must be modifiable, but need not be resizable.
-	 *
-	 * @param c the {@code Comparator} used to compare list elements.
-	 *          A {@code null} value indicates that the elements'
-	 *          {@linkplain Comparable natural ordering} should be used
-	 * @throws ClassCastException            if the list contains elements that are not
-	 *                                       <i>mutually comparable</i> using the specified comparator
-	 * @throws UnsupportedOperationException if the list's list-iterator does
-	 *                                       not support the {@code set} operation
-	 * @throws IllegalArgumentException      (<a href="Collection.html#optional-restrictions">optional</a>)
-	 *                                       if the comparator is found to violate the {@link Comparator}
-	 *                                       contract
-	 * @implSpec The default implementation obtains an array containing all elements in
-	 * this list, sorts the array, and iterates over this list resetting each
-	 * element from the corresponding position in the array. (This avoids the
-	 * n<sup>2</sup> log(n) performance that would result from attempting
-	 * to sort a linked list in place.)
-	 * @implNote This implementation is a stable, adaptive, iterative mergesort that
-	 * requires far fewer than n lg(n) comparisons when the input array is
-	 * partially sorted, while offering the performance of a traditional
-	 * mergesort when the input array is randomly ordered.  If the input array
-	 * is nearly sorted, the implementation requires approximately n
-	 * comparisons.  Temporary storage requirements vary from a small constant
-	 * for nearly sorted input arrays to n/2 object references for randomly
-	 * ordered input arrays.
-	 * <p>
-	 * <p>The implementation takes equal advantage of ascending and
-	 * descending order in its input array, and can take advantage of
-	 * ascending and descending order in different parts of the same
-	 * input array.  It is well-suited to merging two or more sorted arrays:
-	 * simply concatenate the arrays and sort the resulting array.
-	 * <p>
-	 * <p>The implementation was adapted from Tim Peters's list sort for Python
-	 * (<a href="http://svn.python.org/projects/python/trunk/Objects/listsort.txt">
-	 * TimSort</a>).  It uses techniques from Peter McIlroy's "Optimistic
-	 * Sorting and Information Theoretic Complexity", in Proceedings of the
-	 * Fourth Annual ACM-SIAM Symposium on Discrete Algorithms, pp 467-474,
-	 * January 1993.
-	 * @since 1.8
-	 */
-	@Override
-	public void sort(Comparator<? super T> c) {
-	
-	}
-	
-	/**
-	 * {@inheritDoc}
-	 *
-	 * @param index
-	 * @throws IndexOutOfBoundsException {@inheritDoc}
-	 */
-	@Override
-	public T get(int index) {
-		if (!(0 <= index && index < size()))
-			throw new ArrayIndexOutOfBoundsException();
-		
-		return array[index];
-	}
-	
-	public T set(int index, T element) {
-		if (!(0 <= index && index < size()))
-			throw new ArrayIndexOutOfBoundsException();
-		
-		T oldValue = get(index);
-		array[index] = element;
-		return oldValue;
+	public Iterator<T> iterator() {
+		return new Iterator<T>() {
+			
+			public int index = 0;
+			
+			@Override
+			public boolean hasNext() {
+				return size() > index;
+			}
+			
+			@Override
+			public T next() {
+				return get(index++);
+			}
+		};
 	}
 	
 	/**
@@ -381,383 +367,50 @@ public class Lexicon<T> extends AbstractList<T> implements Serializable, Iterabl
 	 */
 	@Override
 	public void forEach(Consumer<? super T> action) {
-	
+		for (T e : this)
+			action.accept(e);
 	}
 	
 	/**
-	 * Creates a {@link Spliterator} over the elements in this list.
-	 * <p>
-	 * <p>The {@code Spliterator} reports {@link Spliterator#SIZED} and
-	 * {@link Spliterator#ORDERED}.  Implementations should document the
-	 * reporting of additional characteristic values.
+	 * Removes all of the elements of this collection that satisfy the given
+	 * predicate.  Errors or runtime exceptions thrown during iteration or by
+	 * the predicate are relayed to the caller.
 	 *
-	 * @return a {@code Spliterator} over the elements in this list
-	 * @implSpec The default implementation creates a
-	 * <em><a href="Spliterator.html#binding">late-binding</a></em> spliterator
-	 * from the list's {@code Iterator}.  The spliterator inherits the
-	 * <em>fail-fast</em> properties of the list's iterator.
-	 * @implNote The created {@code Spliterator} additionally reports
-	 * {@link Spliterator#SUBSIZED}.
+	 * @param filter a predicate which returns {@code true} for elements to be
+	 *               removed
+	 * @return {@code true} if any elements were removed
+	 * @throws NullPointerException          if the specified filter is null
+	 * @throws UnsupportedOperationException if elements cannot be removed
+	 *                                       from this collection.  Implementations may throw this exception if a
+	 *                                       matching element cannot be removed or if, in general, removal is not
+	 *                                       supported.
+	 * @implSpec The default implementation traverses all elements of the collection using
+	 * its {@link #iterator}.  Each matching element is removed using
+	 * {@link Iterator#remove()}.  If the collection's iterator does not
+	 * support removal then an {@code UnsupportedOperationException} will be
+	 * thrown on the first matching element.
 	 * @since 1.8
 	 */
 	@Override
-	public Spliterator<T> spliterator() {
-		return null;
+	public boolean removeIf(Predicate<? super T> filter) {
+		boolean atLeastOneRemoved = false;
+		
+		for (T e : this) {
+			if (filter.test(e)) {
+				remove(e);
+				atLeastOneRemoved = true;
+			}
+		}
+		
+		return atLeastOneRemoved;
 	}
 	
-	/**
-	 * Returns a sequential {@code Stream} with this collection as its source.
-	 * <p>
-	 * <p>This method should be overridden when the {@link #spliterator()}
-	 * method cannot return a spliterator that is {@code IMMUTABLE},
-	 * {@code CONCURRENT}, or <em>late-binding</em>. (See {@link #spliterator()}
-	 * for details.)
-	 *
-	 * @return a sequential {@code Stream} over the elements in this collection
-	 * @implSpec The default implementation creates a sequential {@code Stream} from the
-	 * collection's {@code Spliterator}.
-	 * @since 1.8
-	 */
 	@Override
-	public Stream<T> stream() {
-		return null;
-	}
-	
-	/**
-	 * Returns a possibly parallel {@code Stream} with this collection as its
-	 * source.  It is allowable for this method to return a sequential stream.
-	 * <p>
-	 * <p>This method should be overridden when the {@link #spliterator()}
-	 * method cannot return a spliterator that is {@code IMMUTABLE},
-	 * {@code CONCURRENT}, or <em>late-binding</em>. (See {@link #spliterator()}
-	 * for details.)
-	 *
-	 * @return a possibly parallel {@code Stream} over the elements in this
-	 * collection
-	 * @implSpec The default implementation creates a parallel {@code Stream} from the
-	 * collection's {@code Spliterator}.
-	 * @since 1.8
-	 */
-	@Override
-	public Stream<T> parallelStream() {
-		return null;
-	}
-	
-	/**
-	 * Appends the specified element to the end of this list (optional
-	 * operation).
-	 * <p>
-	 * <p>Lists that support this operation may place limitations on what
-	 * elements may be added to this list.  In particular, some
-	 * lists will refuse to add null elements, and others will impose
-	 * restrictions on the type of elements that may be added.  List
-	 * classes should clearly specify in their documentation any restrictions
-	 * on what elements may be added.
-	 * <p>
-	 * <p>This implementation calls {@code add(size(), e)}.
-	 * <p>
-	 * <p>Note that this implementation throws an
-	 * {@code UnsupportedOperationException} unless
-	 * {@link #add(int, Object) add(int, E)} is overridden.
-	 *
-	 * @param t element to be appended to this list
-	 * @return {@code true} (as specified by {@link Collection#add})
-	 * @throws UnsupportedOperationException if the {@code add} operation
-	 *                                       is not supported by this list
-	 * @throws ClassCastException            if the class of the specified element
-	 *                                       prevents it from being added to this list
-	 * @throws NullPointerException          if the specified element is null and this
-	 *                                       list does not permit null elements
-	 * @throws IllegalArgumentException      if some property of this element
-	 *                                       prevents it from being added to this list
-	 */
-	@Override
-	public boolean add(T t) {
-		return super.add(t);
-	}
-	
-	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * <p>This implementation always throws an
-	 * {@code UnsupportedOperationException}.
-	 *
-	 * @param index
-	 * @param element
-	 * @throws UnsupportedOperationException {@inheritDoc}
-	 * @throws ClassCastException            {@inheritDoc}
-	 * @throws NullPointerException          {@inheritDoc}
-	 * @throws IllegalArgumentException      {@inheritDoc}
-	 * @throws IndexOutOfBoundsException     {@inheritDoc}
-	 */
-	@Override
-	public void add(int index, T element) {
-		super.add(index, element);
-	}
-	
-	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * <p>This implementation always throws an
-	 * {@code UnsupportedOperationException}.
-	 *
-	 * @param index
-	 * @throws UnsupportedOperationException {@inheritDoc}
-	 * @throws IndexOutOfBoundsException     {@inheritDoc}
-	 */
-	@Override
-	public T remove(int index) {
-		return super.remove(index);
-	}
-	
-	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * <p>This implementation first gets a list iterator (with
-	 * {@code listIterator()}).  Then, it iterates over the list until the
-	 * specified element is found or the end of the list is reached.
-	 *
-	 * @param o
-	 * @throws ClassCastException   {@inheritDoc}
-	 * @throws NullPointerException {@inheritDoc}
-	 */
-	@Override
-	public int indexOf(Object o) {
-		return super.indexOf(o);
-	}
-	
-	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * <p>This implementation first gets a list iterator that points to the end
-	 * of the list (with {@code listIterator(size())}).  Then, it iterates
-	 * backwards over the list until the specified element is found, or the
-	 * beginning of the list is reached.
-	 *
-	 * @param o
-	 * @throws ClassCastException   {@inheritDoc}
-	 * @throws NullPointerException {@inheritDoc}
-	 */
-	@Override
-	public int lastIndexOf(Object o) {
-		return super.lastIndexOf(o);
-	}
-	
-	/**
-	 * Removes all of the elements from this list (optional operation).
-	 * The list will be empty after this call returns.
-	 * <p>
-	 * <p>This implementation calls {@code removeRange(0, size())}.
-	 * <p>
-	 * <p>Note that this implementation throws an
-	 * {@code UnsupportedOperationException} unless {@code remove(int
-	 * index)} or {@code removeRange(int fromIndex, int toIndex)} is
-	 * overridden.
-	 *
-	 * @throws UnsupportedOperationException if the {@code clear} operation
-	 *                                       is not supported by this list
-	 */
-	@Override
-	public void clear() {
-		super.clear();
-	}
-	
-	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * <p>This implementation gets an iterator over the specified collection
-	 * and iterates over it, inserting the elements obtained from the
-	 * iterator into this list at the appropriate position, one at a time,
-	 * using {@code add(int, E)}.
-	 * Many implementations will override this method for efficiency.
-	 * <p>
-	 * <p>Note that this implementation throws an
-	 * {@code UnsupportedOperationException} unless
-	 * {@link #add(int, Object) add(int, E)} is overridden.
-	 *
-	 * @param index
-	 * @param c
-	 * @throws UnsupportedOperationException {@inheritDoc}
-	 * @throws ClassCastException            {@inheritDoc}
-	 * @throws NullPointerException          {@inheritDoc}
-	 * @throws IllegalArgumentException      {@inheritDoc}
-	 * @throws IndexOutOfBoundsException     {@inheritDoc}
-	 */
-	@Override
-	public boolean addAll(int index, Collection<? extends T> c) {
-		return super.addAll(index, c);
-	}
-	
-	/**
-	 * Returns an iterator over the elements in this list in proper sequence.
-	 * <p>
-	 * <p>This implementation returns a straightforward implementation of the
-	 * iterator interface, relying on the backing list's {@code size()},
-	 * {@code get(int)}, and {@code remove(int)} methods.
-	 * <p>
-	 * <p>Note that the iterator returned by this method will throw an
-	 * {@link UnsupportedOperationException} in response to its
-	 * {@code remove} method unless the list's {@code remove(int)} method is
-	 * overridden.
-	 * <p>
-	 * <p>This implementation can be made to throw runtime exceptions in the
-	 * face of concurrent modification, as described in the specification
-	 * for the (protected) {@link #modCount} field.
-	 *
-	 * @return an iterator over the elements in this list in proper sequence
-	 */
-	@Override
-	public Iterator<T> iterator() {
-		return super.iterator();
-	}
-	
-	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * <p>This implementation returns {@code listIterator(0)}.
-	 *
-	 * @see #listIterator(int)
-	 */
-	@Override
-	public ListIterator<T> listIterator() {
-		return super.listIterator();
-	}
-	
-	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * <p>This implementation returns a straightforward implementation of the
-	 * {@code ListIterator} interface that extends the implementation of the
-	 * {@code Iterator} interface returned by the {@code iterator()} method.
-	 * The {@code ListIterator} implementation relies on the backing list's
-	 * {@code get(int)}, {@code set(int, E)}, {@code add(int, E)}
-	 * and {@code remove(int)} methods.
-	 * <p>
-	 * <p>Note that the list iterator returned by this implementation will
-	 * throw an {@link UnsupportedOperationException} in response to its
-	 * {@code remove}, {@code set} and {@code add} methods unless the
-	 * list's {@code remove(int)}, {@code set(int, E)}, and
-	 * {@code add(int, E)} methods are overridden.
-	 * <p>
-	 * <p>This implementation can be made to throw runtime exceptions in the
-	 * face of concurrent modification, as described in the specification for
-	 * the (protected) {@link #modCount} field.
-	 *
-	 * @param index
-	 * @throws IndexOutOfBoundsException {@inheritDoc}
-	 */
-	@Override
-	public ListIterator<T> listIterator(int index) {
-		return super.listIterator(index);
-	}
-	
-	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * <p>This implementation returns a list that subclasses
-	 * {@code AbstractList}.  The subclass stores, in private fields, the
-	 * offset of the subList within the backing list, the size of the subList
-	 * (which can change over its lifetime), and the expected
-	 * {@code modCount} value of the backing list.  There are two variants
-	 * of the subclass, one of which implements {@code RandomAccess}.
-	 * If this list implements {@code RandomAccess} the returned list will
-	 * be an instance of the subclass that implements {@code RandomAccess}.
-	 * <p>
-	 * <p>The subclass's {@code set(int, E)}, {@code get(int)},
-	 * {@code add(int, E)}, {@code remove(int)}, {@code addAll(int,
-	 * Collection)} and {@code removeRange(int, int)} methods all
-	 * delegate to the corresponding methods on the backing abstract list,
-	 * after bounds-checking the index and adjusting for the offset.  The
-	 * {@code addAll(Collection c)} method merely returns {@code addAll(size,
-	 * c)}.
-	 * <p>
-	 * <p>The {@code listIterator(int)} method returns a "wrapper object"
-	 * over a list iterator on the backing list, which is created with the
-	 * corresponding method on the backing list.  The {@code iterator} method
-	 * merely returns {@code listIterator()}, and the {@code size} method
-	 * merely returns the subclass's {@code size} field.
-	 * <p>
-	 * <p>All methods first check to see if the actual {@code modCount} of
-	 * the backing list is equal to its expected value, and throw a
-	 * {@code ConcurrentModificationException} if it is not.
-	 *
-	 * @param fromIndex
-	 * @param toIndex
-	 * @throws IndexOutOfBoundsException if an endpoint index value is out of range
-	 *                                   {@code (fromIndex < 0 || toIndex > size)}
-	 * @throws IllegalArgumentException  if the endpoint indices are out of order
-	 *                                   {@code (fromIndex > toIndex)}
-	 */
-	@Override
-	public List<T> subList(int fromIndex, int toIndex) {
-		return super.subList(fromIndex, toIndex);
-	}
-	
-	/**
-	 * Compares the specified object with this list for equality.  Returns
-	 * {@code true} if and only if the specified object is also a list, both
-	 * lists have the same size, and all corresponding pairs of elements in
-	 * the two lists are <i>equal</i>.  (Two elements {@code e1} and
-	 * {@code e2} are <i>equal</i> if {@code (e1==null ? e2==null :
-	 * e1.equals(e2))}.)  In other words, two lists are defined to be
-	 * equal if they contain the same elements in the same order.<p>
-	 * <p>
-	 * This implementation first checks if the specified object is this
-	 * list. If so, it returns {@code true}; if not, it checks if the
-	 * specified object is a list. If not, it returns {@code false}; if so,
-	 * it iterates over both lists, comparing corresponding pairs of elements.
-	 * If any comparison returns {@code false}, this method returns
-	 * {@code false}.  If either iterator runs out of elements before the
-	 * other it returns {@code false} (as the lists are of unequal length);
-	 * otherwise it returns {@code true} when the iterations complete.
-	 *
-	 * @param o the object to be compared for equality with this list
-	 * @return {@code true} if the specified object is equal to this list
-	 */
-	@Override
-	public boolean equals(Object o) {
-		return super.equals(o);
-	}
-	
-	/**
-	 * Returns the hash code value for this list.
-	 * <p>
-	 * <p>This implementation uses exactly the code that is used to define the
-	 * list hash function in the documentation for the {@link List#hashCode}
-	 * method.
-	 *
-	 * @return the hash code value for this list
-	 */
-	@Override
-	public int hashCode() {
-		return super.hashCode();
-	}
-	
-	/**
-	 * Removes from this list all of the elements whose index is between
-	 * {@code fromIndex}, inclusive, and {@code toIndex}, exclusive.
-	 * Shifts any succeeding elements to the left (reduces their index).
-	 * This call shortens the list by {@code (toIndex - fromIndex)} elements.
-	 * (If {@code toIndex==fromIndex}, this operation has no effect.)
-	 * <p>
-	 * <p>This method is called by the {@code clear} operation on this list
-	 * and its subLists.  Overriding this method to take advantage of
-	 * the internals of the list implementation can <i>substantially</i>
-	 * improve the performance of the {@code clear} operation on this list
-	 * and its subLists.
-	 * <p>
-	 * <p>This implementation gets a list iterator positioned before
-	 * {@code fromIndex}, and repeatedly calls {@code ListIterator.next}
-	 * followed by {@code ListIterator.remove} until the entire range has
-	 * been removed.  <b>Note: if {@code ListIterator.remove} requires linear
-	 * time, this implementation requires quadratic time.</b>
-	 *
-	 * @param fromIndex index of first element to be removed
-	 * @param toIndex   index after last element to be removed
-	 */
-	@Override
-	protected void removeRange(int fromIndex, int toIndex) {
-		super.removeRange(fromIndex, toIndex);
+	public int size() {
+		if (actualSize < 0)
+			actualSize = 0;
+		
+		return actualSize;
 	}
 	
 	/**
@@ -767,7 +420,7 @@ public class Lexicon<T> extends AbstractList<T> implements Serializable, Iterabl
 	 */
 	@Override
 	public boolean isEmpty() {
-		return super.isEmpty();
+		return size() == 0;
 	}
 	
 	/**
@@ -781,8 +434,14 @@ public class Lexicon<T> extends AbstractList<T> implements Serializable, Iterabl
 	 * @throws NullPointerException {@inheritDoc}
 	 */
 	@Override
-	public boolean contains(Object o) {
-		return super.contains(o);
+	public boolean contains(@Nullable Object o) {
+		boolean result = false;
+		
+		for (int i = 0; i < size() && !result; i++)
+			if (Objects.equals(o, get(i)))
+				result = true;
+		
+		return result;
 	}
 	
 	/**
@@ -808,8 +467,8 @@ public class Lexicon<T> extends AbstractList<T> implements Serializable, Iterabl
 	 * }</pre>
 	 */
 	@Override
-	public Object[] toArray() {
-		return super.toArray();
+	public T[] toArray() {
+		return array.clone();
 	}
 	
 	/**
@@ -841,8 +500,46 @@ public class Lexicon<T> extends AbstractList<T> implements Serializable, Iterabl
 	 * @throws NullPointerException {@inheritDoc}
 	 */
 	@Override
-	public <T1> T1[] toArray(T1[] a) {
-		return super.toArray(a);
+	public <U> U[] toArray(U[] a) {
+		if (a.length < size())
+			return (U[]) Arrays.copyOf(array, size(), a.getClass());
+		
+		System.arraycopy(array, 0, a, 0, size());
+		if (a.length > size())
+			a[size()] = null;
+		
+		return a;
+	}
+	
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * <p>This implementation always throws an
+	 * <tt>UnsupportedOperationException</tt>.
+	 *
+	 * @param element The new element to add to the list
+	 * @throws UnsupportedOperationException {@inheritDoc}
+	 * @throws ClassCastException            {@inheritDoc}
+	 * @throws NullPointerException          {@inheritDoc}
+	 * @throws IllegalArgumentException      {@inheritDoc}
+	 * @throws IllegalStateException         {@inheritDoc}
+	 */
+	@Override
+	public boolean add(T element) {
+		if (!isAcceptNullValues() && element == null)
+			return false;
+		
+		if (!isAcceptDuplicates() && contains(element))
+			return false;
+		
+		checkCapacity(size() + 1);
+		
+		if (getClazz() == null)
+			setClazz((Class<T>) element.getClass());
+		
+		array[actualSize++] = element;
+		
+		return true;
 	}
 	
 	/**
@@ -864,7 +561,31 @@ public class Lexicon<T> extends AbstractList<T> implements Serializable, Iterabl
 	 */
 	@Override
 	public boolean remove(Object o) {
-		return super.remove(o);
+		int toRemove = -1;
+		
+		for (int i = 0; i < size() && toRemove == -1; i++)
+			if (Objects.equals(get(i), o))
+				toRemove = i;
+		
+		if (toRemove != -1) {
+			remove(toRemove);
+			return true;
+		}
+		else
+			return false;
+	}
+	
+	public T remove(int index) {
+		checkIndex(index);
+		
+		T oldValue = get(index);
+		
+		if (index < size() - 1)
+			System.arraycopy(array, index + 1, array, index, size() - 1 - index);
+		
+		array[--actualSize] = null;
+		
+		return oldValue;
 	}
 	
 	/**
@@ -882,7 +603,22 @@ public class Lexicon<T> extends AbstractList<T> implements Serializable, Iterabl
 	 */
 	@Override
 	public boolean containsAll(Collection<?> c) {
-		return super.containsAll(c);
+		if (c == null)
+			throw new NullPointerException();
+		
+		if (c.size() == 0)
+			return true;
+		
+		boolean objectNotInListFound = true;
+		
+		while (c.iterator().hasNext() && objectNotInListFound) {
+			Object o = c.iterator().next();
+			
+			if(!contains(o))
+				objectNotInListFound = false;
+		}
+		
+		return objectNotInListFound;
 	}
 	
 	/**
@@ -905,7 +641,22 @@ public class Lexicon<T> extends AbstractList<T> implements Serializable, Iterabl
 	 */
 	@Override
 	public boolean addAll(Collection<? extends T> c) {
-		return super.addAll(c);
+		if (c == null)
+			throw new NullPointerException();
+		
+		if (c.size() == 0)
+			return true;
+		
+		boolean problem = false;
+		
+		while (c.iterator().hasNext()) {
+			T t = c.iterator().next();
+			
+			if (!add(t))
+				problem = true;
+		}
+		
+		return !problem;
 	}
 	
 	/**
@@ -931,7 +682,22 @@ public class Lexicon<T> extends AbstractList<T> implements Serializable, Iterabl
 	 */
 	@Override
 	public boolean removeAll(Collection<?> c) {
-		return super.removeAll(c);
+		if (c == null)
+			throw new NullPointerException();
+		
+		if (c.size() == 0)
+			return true;
+		
+		boolean problem = false;
+		
+		while (c.iterator().hasNext()) {
+			Object o = c.iterator().next();
+			
+			if (!remove(o))
+				problem = true;
+		}
+		
+		return !problem;
 	}
 	
 	/**
@@ -957,7 +723,45 @@ public class Lexicon<T> extends AbstractList<T> implements Serializable, Iterabl
 	 */
 	@Override
 	public boolean retainAll(Collection<?> c) {
-		return super.retainAll(c);
+		if (c == null)
+			throw new NullPointerException();
+		
+		if (c.size() == 0)
+			return true;
+		
+		while (c.iterator().hasNext()) {
+			Object o = c.iterator().next();
+			
+			for (int i = 0; i < size(); i++) {
+				if (!Objects.equals(o, get(i)))
+					remove(i);
+			}
+		}
+		
+		return true;
+	}
+	
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * <p>This implementation iterates over this collection, removing each
+	 * element using the <tt>Iterator.remove</tt> operation.  Most
+	 * implementations will probably choose to override this method for
+	 * efficiency.
+	 * <p>
+	 * <p>Note that this implementation will throw an
+	 * <tt>UnsupportedOperationException</tt> if the iterator returned by this
+	 * collection's <tt>iterator</tt> method does not implement the
+	 * <tt>remove</tt> method and this collection is non-empty.
+	 *
+	 * @throws UnsupportedOperationException {@inheritDoc}
+	 */
+	@Override
+	public void clear() {
+		for (int i = 0; i < size(); i++)
+			set(i, null);
+		
+		actualSize = 0;
 	}
 	
 	/**
@@ -972,6 +776,13 @@ public class Lexicon<T> extends AbstractList<T> implements Serializable, Iterabl
 	 */
 	@Override
 	public String toString() {
-		return super.toString();
+		return "Lexicon{" +
+				"array=" + Arrays.toString(array) +
+				", acceptDuplicates=" + acceptDuplicates +
+				", acceptNullValues=" + acceptNullValues +
+				", automaticSort=" + automaticSort +
+				", synchronizedAccess=" + synchronizedAccess +
+				", actualSize=" + actualSize +
+				'}';
 	}
 }
