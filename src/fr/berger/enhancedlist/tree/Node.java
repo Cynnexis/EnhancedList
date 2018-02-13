@@ -60,6 +60,9 @@ public class Node<T> implements Serializable, Iterable<Node<T>> {
 		getChildren().add(n);
 	}
 	
+	public boolean isLeaf() {
+		return isLeaf(this);
+	}
 	public static <T> boolean isLeaf(Node<T> node) {
 		if (node == null)
 			return true;
@@ -75,14 +78,11 @@ public class Node<T> implements Serializable, Iterable<Node<T>> {
 		
 		return !notNullFound;
 	}
-	public boolean isLeaf() {
-		return isLeaf(this);
-	}
 	
 	public int computeHeight() {
 		return computeHeight(this);
 	}
-	public int computeHeight(Node<T> node) {
+	public static int computeHeight(@NotNull Node<?> node) {
 		if (node == null)
 			return 0;
 		
@@ -92,7 +92,7 @@ public class Node<T> implements Serializable, Iterable<Node<T>> {
 		ArrayList<Integer> depths = new ArrayList<>(node.getChildren().size());
 		
 		// For all child, compute the depths
-		for (Node<T> child : node) {
+		for (Node<?> child : node) {
 			depths.add(computeHeight(child));
 		}
 		
@@ -104,6 +104,47 @@ public class Node<T> implements Serializable, Iterable<Node<T>> {
 		
 		// 'max' is the index to the maximum depth
 		return 1 + depths.get(max);
+	}
+	
+	public int computeNumberOfNodes() {
+		return computeNumberOfNodes(this);
+	}
+	public static int computeNumberOfNodes(@Nullable Node<?> node) {
+		if (node == null)
+			return 0;
+		
+		if (node.isLeaf())
+			return 1;
+		
+		int count = 0;
+		if (node.getChildren().size() > 0) {
+			for (Node<?> child : node)
+				count += computeNumberOfNodes(child);
+		}
+		
+		return count + 1; // +1 to count the current node
+	}
+	
+	public ArrayList<Node<?>> getAllNodesAtDepth(int depth) {
+		return getAllNodesAtDepth(this, depth);
+	}
+	public static ArrayList<Node<?>> getAllNodesAtDepth(@NotNull Node<?> node, int depth) {
+		ArrayList<Node<?>> array = new ArrayList<>(0);
+		
+		if (node == null)
+			return array;
+		
+		if (depth <= 1)
+		{
+			array.add(node);
+			return array;
+		}
+		
+		for (Node<?> child : node) {
+			array.addAll(getAllNodesAtDepth(child, depth - 1));
+		}
+		
+		return array;
 	}
 	
 	/* GETTERS & SETTERS */
