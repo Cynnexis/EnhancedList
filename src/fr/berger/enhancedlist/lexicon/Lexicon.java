@@ -1,8 +1,12 @@
 package fr.berger.enhancedlist.lexicon;
 
-import com.sun.istack.internal.NotNull;
-import com.sun.istack.internal.Nullable;
 import fr.berger.enhancedlist.Couple;
+import fr.berger.enhancedlist.lexicon.eventhandlers.AddHandler;
+import fr.berger.enhancedlist.lexicon.eventhandlers.GetHandler;
+import fr.berger.enhancedlist.lexicon.eventhandlers.RemoveHandler;
+import fr.berger.enhancedlist.lexicon.eventhandlers.SetHandler;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
 import java.lang.reflect.Array;
@@ -12,14 +16,20 @@ import java.util.function.*;
 // http://server2client.com/images/collectionhierarchy.jpg
 // https://docs.oracle.com/javase/tutorial/collections/custom-implementations/index.html
 
-public class Lexicon<T> extends AbstractCollection<T> implements Serializable {
+public class Lexicon<T> extends Observable implements Collection<T>, Serializable {
 	
-	@NotNull
+	@Nullable
 	private T[] array;
 	
 	@NotNull
-	private transient ArrayList<LexiconListener<T>> lexiconListeners = new ArrayList<>();
+	private transient ArrayList<AddHandler<T>> addHandlers = new ArrayList<>();
 	@NotNull
+	private transient ArrayList<GetHandler<T>> getHandlers = new ArrayList<>();
+	@NotNull
+	private transient ArrayList<SetHandler<T>> setHandlers = new ArrayList<>();
+	@NotNull
+	private transient ArrayList<RemoveHandler<T>> removeHandlers = new ArrayList<>();
+	@Nullable
 	private transient Class<T> clazz;
 	private boolean acceptDuplicates = true;
 	private boolean acceptNullValues = true;
@@ -53,11 +63,20 @@ public class Lexicon<T> extends AbstractCollection<T> implements Serializable {
 	public Lexicon(@Nullable Collection<? extends T> elements) {
 		addAll(elements);
 	}
-	
+	public <U extends T> Lexicon(@Nullable U... elements) {
+		addAll(elements);
+	}
 	
 	/* METHODS */
 	
-	// Is There Null Element
+	/**
+	 * Notify all observers that a modification occurred
+	 */
+	protected void snap() {
+		setChanged();
+		notifyObservers();
+	}
+	
 	public static boolean isThereNullElement(@NotNull Lexicon<?> list) {
 		if (list == null)
 			throw new NullPointerException();
@@ -74,7 +93,7 @@ public class Lexicon<T> extends AbstractCollection<T> implements Serializable {
 		return isThereNullElement(this);
 	}
 	
-	// Find Null Elements
+	@NotNull
 	public static ArrayList<Integer> findNullElements(@NotNull Lexicon<?> list) {
 		if (list == null)
 			throw new NullPointerException();
@@ -86,6 +105,10 @@ public class Lexicon<T> extends AbstractCollection<T> implements Serializable {
 				indexes.add(i);
 		
 		return indexes;
+	}
+	@NotNull
+	public ArrayList<Integer> findNullElements() {
+		return findNullElements(this);
 	}
 	
 	// Delete Null Elements
@@ -118,7 +141,8 @@ public class Lexicon<T> extends AbstractCollection<T> implements Serializable {
 		return isThereDuplicates(this);
 	}
 	
-	public static @NotNull ArrayList<Couple<Integer, Integer>> findDuplications(@NotNull Lexicon<?> list) {
+	@NotNull
+	public static ArrayList<Couple<Integer, Integer>> findDuplications(@NotNull Lexicon<?> list) {
 		ArrayList<Couple<Integer, Integer>> counter = new ArrayList<>(0);
 		
 		for (int i = 0; i < list.size()-1; i++)
@@ -128,7 +152,8 @@ public class Lexicon<T> extends AbstractCollection<T> implements Serializable {
 		
 		return counter;
 	}
-	public @NotNull ArrayList<Couple<Integer, Integer>> findDuplications() {
+	@NotNull
+	public ArrayList<Couple<Integer, Integer>> findDuplications() {
 		return findDuplications(this);
 	}
 	
@@ -146,14 +171,16 @@ public class Lexicon<T> extends AbstractCollection<T> implements Serializable {
 		deleteDuplications(this);
 	}
 	
-	public int checkCapacity(int newCapacity) {
+	/* CAPACITY METHODS */
+	
+	protected int checkCapacity(int newCapacity) {
 		if (newCapacity > capacity())
 			return growCapacity(newCapacity);
 		
 		return capacity();
 	}
 	
-	public int trimToSize() {
+	public synchronized int trimToSize() {
 		if (size() < capacity()) {
 			array = Arrays.copyOf(array, size());
 		}
@@ -161,7 +188,7 @@ public class Lexicon<T> extends AbstractCollection<T> implements Serializable {
 		return capacity();
 	}
 	
-	public int growCapacity(int newCapacity) {
+	protected synchronized int growCapacity(int newCapacity) {
 		if (!checkArrayNullity()) {
 			try {
 				array = (T[]) new Object[0];
@@ -176,7 +203,7 @@ public class Lexicon<T> extends AbstractCollection<T> implements Serializable {
 		
 		return capacity();
 	}
-	public int growCapacity() {
+	protected int growCapacity() {
 		return growCapacity(size() + 1);
 	}
 	
@@ -187,7 +214,7 @@ public class Lexicon<T> extends AbstractCollection<T> implements Serializable {
 		return array.length;
 	}
 	
-	private boolean checkArrayNullity() {
+	private synchronized boolean checkArrayNullity() {
 		if (array == null) {
 			if (getClazz() != null) {
 				try {
@@ -204,16 +231,44 @@ public class Lexicon<T> extends AbstractCollection<T> implements Serializable {
 			return true;
 	}
 	
+	/* BASIC LIST METHODS */
+	
+	public void checkIndex(int index) {
+		if (!(0 <= index && index < size()))
+			throw new ArrayIndexOutOfBoundsException();
+	}
+	
 	public T get(int index) {
+		if (isSynchronizedAccess()) {
+			synchronized (this) {
+				return get_content(index);
+			}
+		}
+		else
+			return get_content(index);
+	}
+	protected T get_content(int index) {
 		if (!checkArrayNullity())
 			return null;
 		
 		checkIndex(index);
 		
-		return array[index];
+		T element = array[index];
+		
+		triggerGetHandlers(index, element);
+		return element;
 	}
 	
 	public T set(int index, @Nullable T element) {
+		if (isSynchronizedAccess()) {
+			synchronized (this) {
+				return set_content(index, element);
+			}
+		}
+		else
+			return set_content(index, element);
+	}
+	protected T set_content(int index, @Nullable T element) {
 		checkIndex(index);
 		
 		if (!isAcceptNullValues() && element == null)
@@ -228,17 +283,95 @@ public class Lexicon<T> extends AbstractCollection<T> implements Serializable {
 		T oldValue = get(index);
 		array[index] = element;
 		
+		snap();
+		triggerSetHandlers(index, element);
+		
 		return oldValue;
 	}
 	
-	public void checkIndex(int index) {
-		if (!(0 <= index && index < size()))
-			throw new ArrayIndexOutOfBoundsException();
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * <p>This implementation always throws an
+	 * <tt>UnsupportedOperationException</tt>.
+	 *
+	 * @param element The new element to add to the list
+	 * @throws UnsupportedOperationException {@inheritDoc}
+	 * @throws ClassCastException            {@inheritDoc}
+	 * @throws NullPointerException          {@inheritDoc}
+	 * @throws IllegalArgumentException      {@inheritDoc}
+	 * @throws IllegalStateException         {@inheritDoc}
+	 */
+	@Override
+	public boolean add(@Nullable T element) {
+		if (isSynchronizedAccess()) {
+			synchronized (this) {
+				return add_content(element);
+			}
+		}
+		else
+			return add_content(element);
+	}
+	protected boolean add_content(@Nullable T element) {
+		if (!isAcceptNullValues() && element == null)
+			return false;
+		
+		if (!isAcceptDuplicates() && contains(element))
+			return false;
+		
+		if (getClazz() == null && element != null)
+			setClazz((Class<T>) element.getClass());
+		
+		checkCapacity(size() + 1);
+		
+		array[actualSize++] = element;
+		
+		snap();
+		triggerAddHandlers(size() - 1, element);
+		
+		return true;
 	}
 	
-	public boolean addAll(T[] list) {
-		if (list == null)
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * <p>This implementation iterates over the specified collection, and adds
+	 * each object returned by the iterator to this collection, in turn.
+	 * <p>
+	 * <p>Note that this implementation will throw an
+	 * <tt>UnsupportedOperationException</tt> unless <tt>add</tt> is
+	 * overridden (assuming the specified collection is non-empty).
+	 *
+	 * @param c
+	 * @throws UnsupportedOperationException {@inheritDoc}
+	 * @throws ClassCastException            {@inheritDoc}
+	 * @throws NullPointerException          {@inheritDoc}
+	 * @throws IllegalArgumentException      {@inheritDoc}
+	 * @throws IllegalStateException         {@inheritDoc}
+	 * @see #add(Object)
+	 */
+	@Override
+	public boolean addAll(@Nullable Collection<? extends T> c) {
+		if (c == null)
+			return false;
+		
+		if (c.size() == 0)
 			return true;
+		
+		boolean problem = false;
+		
+		while (c.iterator().hasNext()) {
+			T t = c.iterator().next();
+			
+			if (!add(t))
+				problem = true;
+		}
+		
+		return !problem;
+	}
+	public boolean addAll(@Nullable T... list) {
+		if (list == null)
+			return false;
 		
 		boolean problem = false;
 		
@@ -250,77 +383,79 @@ public class Lexicon<T> extends AbstractCollection<T> implements Serializable {
 		return !problem;
 	}
 	
-	
-	/* GETTERS & SETTERS */
-	
-	public @NotNull ArrayList<LexiconListener<T>> getLexiconListeners() {
-		// If the attribute is null, create a new instance
-		if (this.lexiconListeners == null)
-			this.lexiconListeners = new ArrayList<>();
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * <p>This implementation iterates over the collection looking for the
+	 * specified element.  If it finds the element, it removes the element
+	 * from the collection using the iterator's remove method.
+	 * <p>
+	 * <p>Note that this implementation throws an
+	 * <tt>UnsupportedOperationException</tt> if the iterator returned by this
+	 * collection's iterator method does not implement the <tt>remove</tt>
+	 * method and this collection contains the specified object.
+	 *
+	 * @param o
+	 * @throws UnsupportedOperationException {@inheritDoc}
+	 * @throws ClassCastException            {@inheritDoc}
+	 * @throws NullPointerException          {@inheritDoc}
+	 */
+	@Override
+	public boolean remove(Object o) {
+		int toRemove = -1;
 		
-		// Remove 'null' instances
-		deleteNullElement();
+		for (int i = 0; i < size() && toRemove == -1; i++)
+			if (Objects.equals(get(i), o))
+				toRemove = i;
 		
-		// Remove duplicates elements
-		deleteDuplications();
+		if (toRemove != -1) {
+			remove(toRemove);
+			return true;
+		}
+		else
+			return false;
+	}
+	public T remove(int index) {
+		if (isSynchronizedAccess()) {
+			synchronized (this) {
+				return remove_content(index);
+			}
+		}
+		else
+			return remove_content(index);
+	}
+	protected T remove_content(int index) {
+		checkIndex(index);
 		
-		return lexiconListeners;
-	}
-	
-	public void setLexiconListeners(@NotNull ArrayList<LexiconListener<T>> lexiconListeners) {
-		if (lexiconListeners == null)
-			throw new NullPointerException();
+		T oldValue = get(index);
 		
-		// Remove 'null' instances
-		//deleteNullElement(lexiconListeners);
+		if (index < size() - 1)
+			System.arraycopy(array, index + 1, array, index, size() - 1 - index);
 		
-		// Remove duplicates elements
-		//deleteDuplications(lexiconListeners);
+		array[--actualSize] = null;
 		
-		this.lexiconListeners = lexiconListeners;
-	}
-	
-	public @NotNull Class<T> getClazz() {
-		return clazz;
-	}
-	
-	public void setClazz(@NotNull Class<T> clazz) {
-		if (clazz == null)
-			throw new NullPointerException();
+		snap();
+		triggerRemoveHandlers(index, oldValue);
 		
-		this.clazz = clazz;
+		return oldValue;
 	}
 	
-	public boolean isAcceptDuplicates() {
-		return acceptDuplicates;
+	@Override
+	public int size() {
+		if (actualSize < 0)
+			actualSize = 0;
+		
+		return actualSize;
 	}
 	
-	public void setAcceptDuplicates(boolean acceptDuplicates) {
-		this.acceptDuplicates = acceptDuplicates;
-	}
-	
-	public boolean isAcceptNullValues() {
-		return acceptNullValues;
-	}
-	
-	public void setAcceptNullValues(boolean acceptNullValues) {
-		this.acceptNullValues = acceptNullValues;
-	}
-	
-	public boolean isAutomaticSort() {
-		return automaticSort;
-	}
-	
-	public void setAutomaticSort(boolean automaticSort) {
-		this.automaticSort = automaticSort;
-	}
-	
-	public boolean isSynchronizedAccess() {
-		return synchronizedAccess;
-	}
-	
-	public void setSynchronizedAccess(boolean synchronizedAccess) {
-		this.synchronizedAccess = synchronizedAccess;
+	/**
+	 * {@inheritDoc}
+	 * <p>
+	 * <p>This implementation returns <tt>size() == 0</tt>.
+	 */
+	@Override
+	public boolean isEmpty() {
+		return size() == 0;
 	}
 	
 	/* OVERRIDES */
@@ -403,24 +538,6 @@ public class Lexicon<T> extends AbstractCollection<T> implements Serializable {
 		}
 		
 		return atLeastOneRemoved;
-	}
-	
-	@Override
-	public int size() {
-		if (actualSize < 0)
-			actualSize = 0;
-		
-		return actualSize;
-	}
-	
-	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * <p>This implementation returns <tt>size() == 0</tt>.
-	 */
-	@Override
-	public boolean isEmpty() {
-		return size() == 0;
 	}
 	
 	/**
@@ -514,83 +631,6 @@ public class Lexicon<T> extends AbstractCollection<T> implements Serializable {
 	/**
 	 * {@inheritDoc}
 	 * <p>
-	 * <p>This implementation always throws an
-	 * <tt>UnsupportedOperationException</tt>.
-	 *
-	 * @param element The new element to add to the list
-	 * @throws UnsupportedOperationException {@inheritDoc}
-	 * @throws ClassCastException            {@inheritDoc}
-	 * @throws NullPointerException          {@inheritDoc}
-	 * @throws IllegalArgumentException      {@inheritDoc}
-	 * @throws IllegalStateException         {@inheritDoc}
-	 */
-	@Override
-	public boolean add(T element) {
-		if (!isAcceptNullValues() && element == null)
-			return false;
-		
-		if (!isAcceptDuplicates() && contains(element))
-			return false;
-		
-		checkCapacity(size() + 1);
-		
-		if (getClazz() == null)
-			setClazz((Class<T>) element.getClass());
-		
-		array[actualSize++] = element;
-		
-		return true;
-	}
-	
-	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * <p>This implementation iterates over the collection looking for the
-	 * specified element.  If it finds the element, it removes the element
-	 * from the collection using the iterator's remove method.
-	 * <p>
-	 * <p>Note that this implementation throws an
-	 * <tt>UnsupportedOperationException</tt> if the iterator returned by this
-	 * collection's iterator method does not implement the <tt>remove</tt>
-	 * method and this collection contains the specified object.
-	 *
-	 * @param o
-	 * @throws UnsupportedOperationException {@inheritDoc}
-	 * @throws ClassCastException            {@inheritDoc}
-	 * @throws NullPointerException          {@inheritDoc}
-	 */
-	@Override
-	public boolean remove(Object o) {
-		int toRemove = -1;
-		
-		for (int i = 0; i < size() && toRemove == -1; i++)
-			if (Objects.equals(get(i), o))
-				toRemove = i;
-		
-		if (toRemove != -1) {
-			remove(toRemove);
-			return true;
-		}
-		else
-			return false;
-	}
-	
-	public T remove(int index) {
-		checkIndex(index);
-		
-		T oldValue = get(index);
-		
-		if (index < size() - 1)
-			System.arraycopy(array, index + 1, array, index, size() - 1 - index);
-		
-		array[--actualSize] = null;
-		
-		return oldValue;
-	}
-	
-	/**
-	 * {@inheritDoc}
-	 * <p>
 	 * <p>This implementation iterates over the specified collection,
 	 * checking each element returned by the iterator in turn to see
 	 * if it's contained in this collection.  If all elements are so
@@ -619,44 +659,6 @@ public class Lexicon<T> extends AbstractCollection<T> implements Serializable {
 		}
 		
 		return objectNotInListFound;
-	}
-	
-	/**
-	 * {@inheritDoc}
-	 * <p>
-	 * <p>This implementation iterates over the specified collection, and adds
-	 * each object returned by the iterator to this collection, in turn.
-	 * <p>
-	 * <p>Note that this implementation will throw an
-	 * <tt>UnsupportedOperationException</tt> unless <tt>add</tt> is
-	 * overridden (assuming the specified collection is non-empty).
-	 *
-	 * @param c
-	 * @throws UnsupportedOperationException {@inheritDoc}
-	 * @throws ClassCastException            {@inheritDoc}
-	 * @throws NullPointerException          {@inheritDoc}
-	 * @throws IllegalArgumentException      {@inheritDoc}
-	 * @throws IllegalStateException         {@inheritDoc}
-	 * @see #add(Object)
-	 */
-	@Override
-	public boolean addAll(Collection<? extends T> c) {
-		if (c == null)
-			throw new NullPointerException();
-		
-		if (c.size() == 0)
-			return true;
-		
-		boolean problem = false;
-		
-		while (c.iterator().hasNext()) {
-			T t = c.iterator().next();
-			
-			if (!add(t))
-				problem = true;
-		}
-		
-		return !problem;
 	}
 	
 	/**
@@ -776,13 +778,197 @@ public class Lexicon<T> extends AbstractCollection<T> implements Serializable {
 	 */
 	@Override
 	public String toString() {
-		return "Lexicon{" +
-				"array=" + Arrays.toString(array) +
-				", acceptDuplicates=" + acceptDuplicates +
-				", acceptNullValues=" + acceptNullValues +
-				", automaticSort=" + automaticSort +
-				", synchronizedAccess=" + synchronizedAccess +
-				", actualSize=" + actualSize +
-				'}';
+		StringBuilder builder = new StringBuilder();
+		builder.append('[');
+		
+		if (this.size() > 0) {
+			for (int i = 0; i < this.size(); i++) {
+				builder.append(Objects.toString(get(i)));
+				
+				if (i != this.size() - 1)
+					builder.append(", ");
+			}
+		}
+		builder.append(']');
+		
+		return builder.toString();
+	}
+	
+	/* GETTERS & SETTERS */
+	
+	@NotNull
+	public ArrayList<AddHandler<T>> getAddHandlers() {
+		if (addHandlers == null)
+			addHandlers = new ArrayList<>();
+		
+		return addHandlers;
+	}
+	
+	public void setAddHandlers(@NotNull ArrayList<AddHandler<T>> addHandlers) {
+		if (addHandlers == null)
+			throw new NullPointerException();
+		
+		this.addHandlers = addHandlers;
+	}
+	
+	public boolean addAddHandler(@NotNull AddHandler<T> addHandler) {
+		if (addHandler == null)
+			throw new NullPointerException();
+		
+		return getAddHandlers().add(addHandler);
+	}
+	
+	protected void triggerAddHandlers(int index, T element) {
+		for (int i = 0; i < getAddHandlers().size(); i++) {
+			if (getAddHandlers().get(i) == null) {
+				getAddHandlers().remove(i);
+				i--;
+			}
+			else
+				getAddHandlers().get(i).onElementAdded(index, element);
+		}
+	}
+	
+	@NotNull
+	public ArrayList<GetHandler<T>> getGetHandlers() {
+		if (getHandlers == null)
+			getHandlers = new ArrayList<>();
+		
+		return getHandlers;
+	}
+	
+	public void setGetHandlers(@NotNull ArrayList<GetHandler<T>> getHandlers) {
+		if (getHandlers == null)
+			throw new NullPointerException();
+		
+		this.getHandlers = getHandlers;
+	}
+	
+	public boolean addGetHandler(@NotNull GetHandler<T> getHandler) {
+		if (getHandler == null)
+			throw new NullPointerException();
+		
+		return getGetHandlers().add(getHandler);
+	}
+	
+	protected void triggerGetHandlers(int index, T element) {
+		for (int i = 0; i < getGetHandlers().size(); i++) {
+			if (getGetHandlers().get(i) == null) {
+				getGetHandlers().remove(i);
+				i--;
+			}
+			else
+				getGetHandlers().get(i).onElementGotten(index, element);
+		}
+	}
+	
+	@NotNull
+	public ArrayList<SetHandler<T>> getSetHandlers() {
+		if (setHandlers == null)
+			setHandlers = new ArrayList<>();
+		
+		return setHandlers;
+	}
+	
+	public void setSetHandlers(@NotNull ArrayList<SetHandler<T>> setHandlers) {
+		if (setHandlers == null)
+			throw new NullPointerException();
+		
+		this.setHandlers = setHandlers;
+	}
+	
+	public boolean addSetHandler(@NotNull SetHandler<T> setHandler) {
+		if (setHandler == null)
+			throw new NullPointerException();
+		
+		return getSetHandlers().add(setHandler);
+	}
+	
+	protected void triggerSetHandlers(int index, T element) {
+		for (int i = 0; i < getSetHandlers().size(); i++) {
+			if (getSetHandlers().get(i) == null) {
+				getSetHandlers().remove(i);
+				i--;
+			}
+			else
+				getSetHandlers().get(i).onElementSet(index, element);
+		}
+	}
+	
+	@NotNull
+	public ArrayList<RemoveHandler<T>> getRemoveHandlers() {
+		if (removeHandlers == null)
+			removeHandlers = new ArrayList<>();
+		
+		return removeHandlers;
+	}
+	
+	public void setRemoveHandlers(@NotNull ArrayList<RemoveHandler<T>> removeHandlers) {
+		if (removeHandlers == null)
+			throw new NullPointerException();
+		
+		this.removeHandlers = removeHandlers;
+	}
+	
+	public boolean addRemoveHandler(@NotNull RemoveHandler<T> removeHandler) {
+		if (removeHandler == null)
+			throw new NullPointerException();
+		
+		return getRemoveHandlers().add(removeHandler);
+	}
+	
+	protected void triggerRemoveHandlers(int index, T element) {
+		for (int i = 0; i < getRemoveHandlers().size(); i++) {
+			if (getRemoveHandlers().get(i) == null) {
+				getRemoveHandlers().remove(i);
+				i--;
+			}
+			else
+				getRemoveHandlers().get(i).onElementRemoved(index, element);
+		}
+	}
+	
+	@Nullable
+	public Class<T> getClazz() {
+		return clazz;
+	}
+	
+	public void setClazz(@NotNull Class<T> clazz) {
+		if (clazz == null)
+			throw new NullPointerException();
+		
+		this.clazz = clazz;
+	}
+	
+	public boolean isAcceptDuplicates() {
+		return acceptDuplicates;
+	}
+	
+	public void setAcceptDuplicates(boolean acceptDuplicates) {
+		this.acceptDuplicates = acceptDuplicates;
+	}
+	
+	public boolean isAcceptNullValues() {
+		return acceptNullValues;
+	}
+	
+	public void setAcceptNullValues(boolean acceptNullValues) {
+		this.acceptNullValues = acceptNullValues;
+	}
+	
+	public boolean isAutomaticSort() {
+		return automaticSort;
+	}
+	
+	public void setAutomaticSort(boolean automaticSort) {
+		this.automaticSort = automaticSort;
+	}
+	
+	public boolean isSynchronizedAccess() {
+		return synchronizedAccess;
+	}
+	
+	public void setSynchronizedAccess(boolean synchronizedAccess) {
+		this.synchronizedAccess = synchronizedAccess;
 	}
 }
