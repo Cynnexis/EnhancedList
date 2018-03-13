@@ -16,6 +16,7 @@ import java.util.function.*;
 // http://server2client.com/images/collectionhierarchy.jpg
 // https://docs.oracle.com/javase/tutorial/collections/custom-implementations/index.html
 
+@SuppressWarnings("ConstantConditions")
 public class Lexicon<T> extends Observable implements Collection<T>, Serializable {
 	
 	@Nullable
@@ -33,7 +34,6 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 	private transient Class<T> clazz;
 	private boolean acceptDuplicates = true;
 	private boolean acceptNullValues = true;
-	private boolean automaticSort = false;
 	private boolean synchronizedAccess = false;
 	
 	private int actualSize = 0;
@@ -48,23 +48,47 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 	 * @throws IllegalArgumentException if the specified initial capacity
 	 *                                  is negative
 	 */
+	@SuppressWarnings({"WeakerAccess", "unused"})
 	public Lexicon() {
+		initialize();
 	}
-	public Lexicon(@NotNull Class<T> clazz) {
-		setClazz(clazz);
-	}
+	@SuppressWarnings({"WeakerAccess", "unused"})
 	public Lexicon(@NotNull Class<T> clazz, int initialCapacity) {
 		setClazz(clazz);
 		growCapacity(initialCapacity);
+		initialize();
 	}
+	@SuppressWarnings({"WeakerAccess", "unused"})
+	public Lexicon(@NotNull Class<T> clazz) {
+		setClazz(clazz);
+		initialize();
+	}
+	@SuppressWarnings({"WeakerAccess", "unused"})
 	public <U extends T> Lexicon(@Nullable U element) {
 		add(element);
+		initialize();
 	}
+	@SuppressWarnings({"WeakerAccess", "unused"})
 	public Lexicon(@Nullable Collection<? extends T> elements) {
 		addAll(elements);
+		initialize();
 	}
+	@SafeVarargs
+	@SuppressWarnings({"WeakerAccess", "unused"})
 	public <U extends T> Lexicon(@Nullable U... elements) {
 		addAll(elements);
+		initialize();
+	}
+	
+	@SuppressWarnings("WeakerAccess")
+	protected void initialize() {
+		setAddHandlers(new ArrayList<>());
+		setGetHandlers(new ArrayList<>());
+		setSetHandlers(new ArrayList<>());
+		setRemoveHandlers(new ArrayList<>());
+		setAcceptDuplicates(true);
+		setAcceptNullValues(true);
+		setSynchronizedAccess(false);
 	}
 	
 	/* METHODS */
@@ -72,11 +96,13 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 	/**
 	 * Notify all observers that a modification occurred
 	 */
+	@SuppressWarnings("WeakerAccess")
 	protected void snap() {
 		setChanged();
 		notifyObservers();
 	}
 	
+	@SuppressWarnings("WeakerAccess")
 	public static boolean isThereNullElement(@NotNull Lexicon<?> list) {
 		if (list == null)
 			throw new NullPointerException();
@@ -94,6 +120,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 	}
 	
 	@NotNull
+	@SuppressWarnings("WeakerAccess")
 	public static ArrayList<Integer> findNullElements(@NotNull Lexicon<?> list) {
 		if (list == null)
 			throw new NullPointerException();
@@ -112,6 +139,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 	}
 	
 	// Delete Null Elements
+	@SuppressWarnings("WeakerAccess")
 	public static void deleteNullElement(@NotNull Lexicon<?> list) {
 		if (list == null)
 			throw new NullPointerException();
@@ -127,6 +155,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		deleteNullElement(this);
 	}
 	
+	@SuppressWarnings("WeakerAccess")
 	public static boolean isThereDuplicates(@NotNull Lexicon<?> list) {
 		boolean duplicateFound = false;
 		
@@ -142,6 +171,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 	}
 	
 	@NotNull
+	@SuppressWarnings("WeakerAccess")
 	public static ArrayList<Couple<Integer, Integer>> findDuplications(@NotNull Lexicon<?> list) {
 		ArrayList<Couple<Integer, Integer>> counter = new ArrayList<>(0);
 		
@@ -157,6 +187,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		return findDuplications(this);
 	}
 	
+	@SuppressWarnings("WeakerAccess")
 	public static void deleteDuplications(@NotNull Lexicon<?> list) {
 		for (int i = 0; i < list.size() - 1; i++) {
 			for (int j = i+1; j < list.size(); j++) {
@@ -173,6 +204,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 	
 	/* CAPACITY METHODS */
 	
+	@SuppressWarnings({"UnusedReturnValue", "WeakerAccess"})
 	protected int checkCapacity(int newCapacity) {
 		if (newCapacity > capacity())
 			return growCapacity(newCapacity);
@@ -188,6 +220,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		return capacity();
 	}
 	
+	@SuppressWarnings({"WeakerAccess", "unchecked"})
 	protected synchronized int growCapacity(int newCapacity) {
 		if (!checkArrayNullity()) {
 			try {
@@ -203,6 +236,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		
 		return capacity();
 	}
+	@SuppressWarnings("unused")
 	protected int growCapacity() {
 		return growCapacity(size() + 1);
 	}
@@ -214,6 +248,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		return array.length;
 	}
 	
+	@SuppressWarnings({"BooleanMethodIsAlwaysInverted", "unchecked"})
 	private synchronized boolean checkArrayNullity() {
 		if (array == null) {
 			if (getClazz() != null) {
@@ -233,6 +268,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 	
 	/* BASIC LIST METHODS */
 	
+	@SuppressWarnings("WeakerAccess")
 	public void checkIndex(int index) {
 		if (!(0 <= index && index < size()))
 			throw new ArrayIndexOutOfBoundsException();
@@ -247,6 +283,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		else
 			return get_content(index);
 	}
+	@SuppressWarnings("WeakerAccess")
 	protected T get_content(int index) {
 		if (!checkArrayNullity())
 			return null;
@@ -259,6 +296,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		return element;
 	}
 	
+	@SuppressWarnings({"WeakerAccess", "UnusedReturnValue"})
 	public T set(int index, @Nullable T element) {
 		if (isSynchronizedAccess()) {
 			synchronized (this) {
@@ -268,6 +306,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		else
 			return set_content(index, element);
 	}
+	@SuppressWarnings({"WeakerAccess", "unchecked"})
 	protected T set_content(int index, @Nullable T element) {
 		checkIndex(index);
 		
@@ -312,6 +351,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		else
 			return add_content(element);
 	}
+	@SuppressWarnings({"unchecked", "WeakerAccess"})
 	protected boolean add_content(@Nullable T element) {
 		if (!isAcceptNullValues() && element == null)
 			return false;
@@ -323,6 +363,9 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 			setClazz((Class<T>) element.getClass());
 		
 		checkCapacity(size() + 1);
+		
+		if (array == null)
+			return false;
 		
 		array[actualSize++] = element;
 		
@@ -369,6 +412,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		
 		return !problem;
 	}
+	@SuppressWarnings({"unchecked", "UnusedReturnValue"})
 	public boolean addAll(@Nullable T... list) {
 		if (list == null)
 			return false;
@@ -415,6 +459,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		else
 			return false;
 	}
+	@SuppressWarnings({"WeakerAccess", "UnusedReturnValue"})
 	public T remove(int index) {
 		if (isSynchronizedAccess()) {
 			synchronized (this) {
@@ -424,6 +469,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		else
 			return remove_content(index);
 	}
+	@SuppressWarnings("WeakerAccess")
 	protected T remove_content(int index) {
 		checkIndex(index);
 		
@@ -438,6 +484,26 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		triggerRemoveHandlers(index, oldValue);
 		
 		return oldValue;
+	}
+	
+	@SuppressWarnings("unused")
+	public void swap(int index1, int index2) {
+		if (isSynchronizedAccess()) {
+			synchronized (this) {
+				swap_content(index1, index2);
+			}
+		}
+		else
+			swap_content(index1, index2);
+	}
+	@SuppressWarnings("WeakerAccess")
+	protected void swap_content(int index1, int index2) {
+		checkIndex(index1);
+		checkIndex(index2);
+		
+		T temp = get(index1);
+		set(index1, get(index2));
+		set(index2, temp);
 	}
 	
 	@Override
@@ -465,11 +531,12 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 	 *
 	 * @return an iterator over the elements contained in this collection
 	 */
+	@NotNull
 	@Override
 	public Iterator<T> iterator() {
 		return new Iterator<T>() {
 			
-			public int index = 0;
+			private int index = 0;
 			
 			@Override
 			public boolean hasNext() {
@@ -583,8 +650,13 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 	 * return list.toArray();
 	 * }</pre>
 	 */
+	@SuppressWarnings("NullableProblems")
+	@Nullable
 	@Override
 	public T[] toArray() {
+		if (array == null)
+			return null;
+		
 		return array.clone();
 	}
 	
@@ -616,6 +688,8 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 	 * @throws ArrayStoreException  {@inheritDoc}
 	 * @throws NullPointerException {@inheritDoc}
 	 */
+	@Nullable
+	@SuppressWarnings({"NullableProblems", "unchecked", "SuspiciousSystemArraycopy"})
 	@Override
 	public <U> U[] toArray(U[] a) {
 		if (a.length < size())
@@ -642,7 +716,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 	 * @see #contains(Object)
 	 */
 	@Override
-	public boolean containsAll(Collection<?> c) {
+	public boolean containsAll(@NotNull Collection<?> c) {
 		if (c == null)
 			throw new NullPointerException();
 		
@@ -683,7 +757,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 	 * @see #contains(Object)
 	 */
 	@Override
-	public boolean removeAll(Collection<?> c) {
+	public boolean removeAll(@NotNull Collection<?> c) {
 		if (c == null)
 			throw new NullPointerException();
 		
@@ -724,7 +798,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 	 * @see #contains(Object)
 	 */
 	@Override
-	public boolean retainAll(Collection<?> c) {
+	public boolean retainAll(@NotNull Collection<?> c) {
 		if (c == null)
 			throw new NullPointerException();
 		
@@ -797,6 +871,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 	/* GETTERS & SETTERS */
 	
 	@NotNull
+	@SuppressWarnings("WeakerAccess")
 	public ArrayList<AddHandler<T>> getAddHandlers() {
 		if (addHandlers == null)
 			addHandlers = new ArrayList<>();
@@ -804,6 +879,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		return addHandlers;
 	}
 	
+	@SuppressWarnings("WeakerAccess")
 	public void setAddHandlers(@NotNull ArrayList<AddHandler<T>> addHandlers) {
 		if (addHandlers == null)
 			throw new NullPointerException();
@@ -811,6 +887,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		this.addHandlers = addHandlers;
 	}
 	
+	@SuppressWarnings("unused")
 	public boolean addAddHandler(@NotNull AddHandler<T> addHandler) {
 		if (addHandler == null)
 			throw new NullPointerException();
@@ -818,6 +895,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		return getAddHandlers().add(addHandler);
 	}
 	
+	@SuppressWarnings("WeakerAccess")
 	protected void triggerAddHandlers(int index, T element) {
 		for (int i = 0; i < getAddHandlers().size(); i++) {
 			if (getAddHandlers().get(i) == null) {
@@ -830,6 +908,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 	}
 	
 	@NotNull
+	@SuppressWarnings("WeakerAccess")
 	public ArrayList<GetHandler<T>> getGetHandlers() {
 		if (getHandlers == null)
 			getHandlers = new ArrayList<>();
@@ -837,6 +916,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		return getHandlers;
 	}
 	
+	@SuppressWarnings("WeakerAccess")
 	public void setGetHandlers(@NotNull ArrayList<GetHandler<T>> getHandlers) {
 		if (getHandlers == null)
 			throw new NullPointerException();
@@ -844,6 +924,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		this.getHandlers = getHandlers;
 	}
 	
+	@SuppressWarnings("unused")
 	public boolean addGetHandler(@NotNull GetHandler<T> getHandler) {
 		if (getHandler == null)
 			throw new NullPointerException();
@@ -851,6 +932,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		return getGetHandlers().add(getHandler);
 	}
 	
+	@SuppressWarnings("WeakerAccess")
 	protected void triggerGetHandlers(int index, T element) {
 		for (int i = 0; i < getGetHandlers().size(); i++) {
 			if (getGetHandlers().get(i) == null) {
@@ -863,6 +945,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 	}
 	
 	@NotNull
+	@SuppressWarnings("WeakerAccess")
 	public ArrayList<SetHandler<T>> getSetHandlers() {
 		if (setHandlers == null)
 			setHandlers = new ArrayList<>();
@@ -870,6 +953,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		return setHandlers;
 	}
 	
+	@SuppressWarnings("WeakerAccess")
 	public void setSetHandlers(@NotNull ArrayList<SetHandler<T>> setHandlers) {
 		if (setHandlers == null)
 			throw new NullPointerException();
@@ -877,6 +961,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		this.setHandlers = setHandlers;
 	}
 	
+	@SuppressWarnings("unused")
 	public boolean addSetHandler(@NotNull SetHandler<T> setHandler) {
 		if (setHandler == null)
 			throw new NullPointerException();
@@ -884,6 +969,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		return getSetHandlers().add(setHandler);
 	}
 	
+	@SuppressWarnings("WeakerAccess")
 	protected void triggerSetHandlers(int index, T element) {
 		for (int i = 0; i < getSetHandlers().size(); i++) {
 			if (getSetHandlers().get(i) == null) {
@@ -896,6 +982,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 	}
 	
 	@NotNull
+	@SuppressWarnings("WeakerAccess")
 	public ArrayList<RemoveHandler<T>> getRemoveHandlers() {
 		if (removeHandlers == null)
 			removeHandlers = new ArrayList<>();
@@ -903,6 +990,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		return removeHandlers;
 	}
 	
+	@SuppressWarnings("WeakerAccess")
 	public void setRemoveHandlers(@NotNull ArrayList<RemoveHandler<T>> removeHandlers) {
 		if (removeHandlers == null)
 			throw new NullPointerException();
@@ -910,6 +998,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		this.removeHandlers = removeHandlers;
 	}
 	
+	@SuppressWarnings("unused")
 	public boolean addRemoveHandler(@NotNull RemoveHandler<T> removeHandler) {
 		if (removeHandler == null)
 			throw new NullPointerException();
@@ -917,6 +1006,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		return getRemoveHandlers().add(removeHandler);
 	}
 	
+	@SuppressWarnings("WeakerAccess")
 	protected void triggerRemoveHandlers(int index, T element) {
 		for (int i = 0; i < getRemoveHandlers().size(); i++) {
 			if (getRemoveHandlers().get(i) == null) {
@@ -933,6 +1023,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		return clazz;
 	}
 	
+	@SuppressWarnings("WeakerAccess")
 	public void setClazz(@NotNull Class<T> clazz) {
 		if (clazz == null)
 			throw new NullPointerException();
@@ -940,6 +1031,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		this.clazz = clazz;
 	}
 	
+	@SuppressWarnings({"WeakerAccess", "BooleanMethodIsAlwaysInverted"})
 	public boolean isAcceptDuplicates() {
 		return acceptDuplicates;
 	}
@@ -948,6 +1040,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		this.acceptDuplicates = acceptDuplicates;
 	}
 	
+	@SuppressWarnings({"WeakerAccess", "BooleanMethodIsAlwaysInverted"})
 	public boolean isAcceptNullValues() {
 		return acceptNullValues;
 	}
@@ -956,18 +1049,12 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		this.acceptNullValues = acceptNullValues;
 	}
 	
-	public boolean isAutomaticSort() {
-		return automaticSort;
-	}
-	
-	public void setAutomaticSort(boolean automaticSort) {
-		this.automaticSort = automaticSort;
-	}
-	
+	@SuppressWarnings("WeakerAccess")
 	public boolean isSynchronizedAccess() {
 		return synchronizedAccess;
 	}
 	
+	@SuppressWarnings("WeakerAccess")
 	public void setSynchronizedAccess(boolean synchronizedAccess) {
 		this.synchronizedAccess = synchronizedAccess;
 	}

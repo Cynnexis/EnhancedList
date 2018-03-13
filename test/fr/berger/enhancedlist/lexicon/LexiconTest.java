@@ -1,6 +1,7 @@
 package fr.berger.enhancedlist.lexicon;
 
 import fr.berger.enhancedlist.Couple;
+import fr.berger.enhancedlist.lexicon.eventhandlers.AddHandler;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,6 +14,12 @@ import static org.junit.jupiter.api.Assertions.*;
 class LexiconTest {
 	
 	Lexicon<Integer> ints;
+	
+	/* For the following variables, please see test_handlers */
+	boolean add = false;
+	boolean get = false;
+	boolean set = false;
+	boolean remove = false;
 	
 	@BeforeEach
 	void setup() {
@@ -148,5 +155,78 @@ class LexiconTest {
 		
 		System.out.println("test_nullElement> ints.size() " + ints.size());
 		Assertions.assertEquals(4, ints.size());
+	}
+	
+	@Test
+	void test_addRecursiveType() {
+		Lexicon<LexiconTest> rec1 = new Lexicon<>();
+		Lexicon<LexiconTest> rec2 = new Lexicon<>(LexiconTest.class);
+		
+		rec1.add(new LexiconTest());
+		rec1.add(new LexiconTest());
+		
+		rec2.add(this);
+		
+		Assertions.assertEquals(2, rec1.size());
+		Assertions.assertEquals(1, rec2.size());
+	}
+	
+	@Test
+	void test_addLot() {
+		Lexicon<Integer> counter = new Lexicon<>();
+		int max = 1 << 10; // 2^10
+		
+		for (int i = 0; i < max; i++) {
+			counter.add(i);
+		}
+		
+		System.out.println("test_addLot()> counter.size() : " + counter.size());
+		System.out.println("test_addLot()> counter.capacity() : " + counter.capacity());
+		Assertions.assertEquals(max, counter.size());
+	}
+	
+	@Test
+	void test_capacity() {
+		// Create a list with a capacity of 100 elements (now, all elements in that array are 'null')
+		int cap = 100;
+		Lexicon<Integer> list = new Lexicon<>(int.class, cap);
+		
+		Assertions.assertEquals(cap, list.capacity());
+		
+		// Add few elements in list
+		int s = 3;
+		for (int i = 0; i < s; i++)
+			list.add(i);
+		
+		// Now, only 3 out of 100 cases are filled in the array, all the other values are 'null'
+		Assertions.assertEquals(cap, list.capacity());
+		
+		for (int i = 0; i < 3; i++)
+			Assertions.assertEquals(i, (int) list.get(i));
+		
+		// Trim the capacity
+		int newCap = list.trimToSize();
+		
+		Assertions.assertEquals(newCap, list.capacity());
+		Assertions.assertEquals(newCap, s);
+	}
+	
+	@Test
+	void test_swap() {
+		ints.swap(0, 10);
+		Assertions.assertEquals(10, (int) ints.get(0));
+		Assertions.assertEquals(0,  (int) ints.get(10));
+	}
+	
+	@Test
+	void test_handlers() {
+		
+		ints.addAddHandler(new AddHandler<Integer>() {
+			@Override
+			public void onElementAdded(int index, Integer element) {
+				System.out.println("LexiconTest.test_handlers> Element \"" + element.toString() + "\" added at n°" + index + '.');
+				add = true;
+			}
+		});
 	}
 }
