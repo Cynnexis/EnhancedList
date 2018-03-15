@@ -44,7 +44,6 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 	
 	/**
 	 * Constructs an empty list with the specified initial capacity.
-	 *
 	 * @throws IllegalArgumentException if the specified initial capacity
 	 *                                  is negative
 	 */
@@ -97,9 +96,12 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 	 * Notify all observers that a modification occurred
 	 */
 	@SuppressWarnings("WeakerAccess")
-	protected void snap() {
+	protected void snap(@Nullable T element) {
 		setChanged();
-		notifyObservers();
+		notifyObservers(element);
+	}
+	protected void snap() {
+		snap(null);
 	}
 	
 	@SuppressWarnings("WeakerAccess")
@@ -283,8 +285,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		else
 			return get_content(index);
 	}
-	@SuppressWarnings("WeakerAccess")
-	protected T get_content(int index) {
+	private T get_content(int index) {
 		if (!checkArrayNullity())
 			return null;
 		
@@ -306,8 +307,8 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		else
 			return set_content(index, element);
 	}
-	@SuppressWarnings({"WeakerAccess", "unchecked"})
-	protected T set_content(int index, @Nullable T element) {
+	@SuppressWarnings("unchecked")
+	private T set_content(int index, @Nullable T element) {
 		checkIndex(index);
 		
 		if (!isAcceptNullValues() && element == null)
@@ -322,7 +323,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		T oldValue = get(index);
 		array[index] = element;
 		
-		snap();
+		snap(element);
 		triggerSetHandlers(index, element);
 		
 		return oldValue;
@@ -351,8 +352,8 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		else
 			return add_content(element);
 	}
-	@SuppressWarnings({"unchecked", "WeakerAccess"})
-	protected boolean add_content(@Nullable T element) {
+	@SuppressWarnings("unchecked")
+	private boolean add_content(@Nullable T element) {
 		if (!isAcceptNullValues() && element == null)
 			return false;
 		
@@ -369,7 +370,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		
 		array[actualSize++] = element;
 		
-		snap();
+		snap(element);
 		triggerAddHandlers(size() - 1, element);
 		
 		return true;
@@ -469,8 +470,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		else
 			return remove_content(index);
 	}
-	@SuppressWarnings("WeakerAccess")
-	protected T remove_content(int index) {
+	private T remove_content(int index) {
 		checkIndex(index);
 		
 		T oldValue = get(index);
@@ -480,7 +480,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		
 		array[--actualSize] = null;
 		
-		snap();
+		snap(oldValue);
 		triggerRemoveHandlers(index, oldValue);
 		
 		return oldValue;
@@ -496,8 +496,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		else
 			swap_content(index1, index2);
 	}
-	@SuppressWarnings("WeakerAccess")
-	protected void swap_content(int index1, int index2) {
+	private void swap_content(int index1, int index2) {
 		checkIndex(index1);
 		checkIndex(index2);
 		
@@ -626,6 +625,70 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 				result = true;
 		
 		return result;
+	}
+	
+	/**
+	 * Search the element in the list, and return the list of indexes where the element has been found in the list.
+	 * @param element The element to search
+	 * @return The array of indexes where element has been found in the list. If the list is empty, the element is not
+	 * in the list.
+	 */
+	@NotNull
+	public ArrayList<Integer> search(@Nullable T element) {
+		if (isSynchronizedAccess()) {
+			synchronized (this) {
+				return search_content(element);
+			}
+		}
+		else
+			return search_content(element);
+	}
+	/**
+	 * Search the element in the list, and return an HashMap where the keys are the elements and the value a list of
+	 * indexes where the given element has been found in the list.
+	 * @param elements The elements to search
+	 * @return The HashMap of the elements and their list of indexes. If the HashMap is empty, then the elements were
+	 * not in the list.
+	 */
+	@NotNull
+	public HashMap<T, ArrayList<Integer>> search(@NotNull List<T> elements) {
+		if (isSynchronizedAccess()) {
+			synchronized (this) {
+				return search_content(elements);
+			}
+		}
+		else
+			return search_content(elements);
+	}
+	/**
+	 * Search the element in the list, and return an HashMap where the keys are the elements and the value a list of
+	 * indexes where the given element has been found in the list.
+	 * @param elements The elements to search
+	 * @return The HashMap of the elements and their list of indexes. If the HashMap is empty, then the elements were
+	 * not in the list.
+	 */
+	@NotNull HashMap<T, ArrayList<Integer>> search(@NotNull T... elements) {
+		return search(Arrays.asList(elements));
+	}
+	
+	@NotNull
+	private ArrayList<Integer> search_content(@Nullable T element) {
+		ArrayList<Integer> indexes = new ArrayList<>();
+		
+		for (int i = 0; i < size(); i++)
+			if (Objects.equals(get(i), element))
+				indexes.add(i);
+		
+		return indexes;
+	}
+	@NotNull
+	private HashMap<T, ArrayList<Integer>> search_content(@NotNull List<T> elements) {
+		HashMap<T, ArrayList<Integer>> indexes = new HashMap<>();
+		
+		for (T element : elements)
+			indexes.put(element, search(element));
+		
+		return indexes;
 	}
 	
 	/**

@@ -2,36 +2,55 @@ package fr.berger.enhancedlist.lexicon;
 
 import fr.berger.enhancedlist.Couple;
 import fr.berger.enhancedlist.lexicon.eventhandlers.AddHandler;
+import fr.berger.enhancedlist.lexicon.eventhandlers.GetHandler;
+import fr.berger.enhancedlist.lexicon.eventhandlers.RemoveHandler;
+import fr.berger.enhancedlist.lexicon.eventhandlers.SetHandler;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.Objects;
+import java.util.Observable;
+import java.util.Observer;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class LexiconTest {
+class LexiconTest implements Observer {
 	
-	Lexicon<Integer> ints;
+	private Lexicon<Integer> ints;
 	
 	/* For the following variables, please see test_handlers */
-	boolean add = false;
-	boolean get = false;
-	boolean set = false;
-	boolean remove = false;
+	private boolean add;
+	private boolean get;
+	private boolean set;
+	private boolean remove;
+	private int update;
+	
+	/* TESTS */
 	
 	@BeforeEach
 	void setup() {
 		ints = new Lexicon<>(Integer.class, 10);
-		
 		ints.add(0);
 		ints.add(1);
 		ints.add(2);
 		ints.add(3);
 		ints.add(4);
 		ints.add(5);
-		ints.addAll(new Integer[] {6, 7, 8, 9, 10});
+		ints.addAll(6, 7, 8, 9, 10);
+		
+		add = false;
+		get = false;
+		set = false;
+		remove = false;
+		update = 0;
+	}
+	
+	@AfterEach
+	void tearDown() {
+		System.out.println();
 	}
 	
 	@Test
@@ -220,7 +239,6 @@ class LexiconTest {
 	
 	@Test
 	void test_handlers() {
-		
 		ints.addAddHandler(new AddHandler<Integer>() {
 			@Override
 			public void onElementAdded(int index, Integer element) {
@@ -228,5 +246,53 @@ class LexiconTest {
 				add = true;
 			}
 		});
+		ints.addGetHandler(new GetHandler<Integer>() {
+			@Override
+			public void onElementGotten(int index, Integer element) {
+				System.out.println("LexiconTest.test_handlers> Element \"" + element.toString() + "\" gotten at n°" + index + '.');
+				get = true;
+			}
+		});
+		ints.addSetHandler(new SetHandler<Integer>() {
+			@Override
+			public void onElementSet(int index, Integer element) {
+				System.out.println("LexiconTest.test_handlers> Element \"" + element.toString() + "\" set at n°" + index + '.');
+				set = true;
+			}
+		});
+		ints.addRemoveHandler(new RemoveHandler<Integer>() {
+			@Override
+			public void onElementRemoved(int index, Integer element) {
+				System.out.println("LexiconTest.test_handlers> Element \"" + element.toString() + "\" removed at n°" + index + '.');
+				remove = true;
+			}
+		});
+		
+		ints.addObserver(this);
+		
+		ints.add(100);
+		Assertions.assertTrue(add);
+		
+		ints.get(0);
+		Assertions.assertTrue(get);
+		ints.get(11);
+		Assertions.assertTrue(get);
+		
+		ints.set(11, 11);
+		Assertions.assertTrue(set);
+		
+		ints.remove(11);
+		Assertions.assertTrue(remove);
+		
+		System.out.println("LexiconTest.test_handlers> number of update(s) : " + update + '.');
+		Assertions.assertTrue(update > 0);
+	}
+	
+	/* OVERRIDE */
+	
+	@Override
+	public void update(Observable observable, Object o) {
+		System.out.println("LexiconTest.test_handlers> observable \"" + observable.getClass().getSimpleName() + "\" sent the object \"" + Objects.toString(o) + "\".");
+		update++;
 	}
 }
