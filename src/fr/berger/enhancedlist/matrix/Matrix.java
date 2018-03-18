@@ -54,7 +54,7 @@ public class Matrix<T> implements Serializable {
 		for (int i = 0; i < nbColumns; i++)
 		{
 			matrix.add(new ArrayList<>(nbRows));
-			for (int j = 0; j < nbColumns; j++)
+			for (int j = 0; j < nbRows; j++)
 			{
 				matrix.get(i).add(defaultValue);
 				listener.OnCellChanged(i, j, defaultValue);
