@@ -147,7 +147,7 @@ public class Matrix<T> implements Serializable {
 			for (int i = 0; i < nbColumns && !found; i++)
 				if (matrix.get(i).contains(object))
 					found = true;
-		} catch (ArrayIndexOutOfBoundsException ex) {
+		} catch (ArrayIndexOutOfBoundsException ignored) {
 			found = false;
 		}
 		

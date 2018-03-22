@@ -10,10 +10,12 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.*;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Observable;
 import java.util.Observer;
+import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -58,6 +60,22 @@ class LexiconTest implements Observer {
 		for (int i = 0; i < ints.size(); i++) {
 			System.out.println("test_gettingElements> ints[" + i + "] = " + ints.get(i).toString());
 			Assertions.assertEquals(i, ints.get(i).intValue());
+		}
+		
+		// Test exception
+		try {
+			ints.get(11);
+			
+			Assertions.fail("test_gettingElements> Lexicon should have throw exception.");
+		} catch (IndexOutOfBoundsException ignored) {
+			System.out.println("test_gettingElements> IndexOutOfBoundsException caught");
+		}
+		try {
+			ints.get(-1);
+			
+			Assertions.fail("test_gettingElements> Lexicon should have throw exception.");
+		} catch (IndexOutOfBoundsException ignored) {
+			System.out.println("test_gettingElements> IndexOutOfBoundsException caught");
 		}
 	}
 	
@@ -286,6 +304,90 @@ class LexiconTest implements Observer {
 		
 		System.out.println("LexiconTest.test_handlers> number of update(s) : " + update + '.');
 		Assertions.assertTrue(update > 0);
+	}
+	
+	@Test
+	void test_serialization() {
+		
+		String filename = "LexiconTest-test_serialization.bin";
+		File file = new File(filename);
+		
+		// WRITE
+		FileOutputStream fos = null;
+		ObjectOutputStream oos = null;
+		
+		try {
+			fos = new FileOutputStream(file);
+			oos = new ObjectOutputStream(fos);
+			
+			oos.writeObject(ints);
+			System.out.println("test_serialization> ints serialized.");
+		} catch (IOException ex) {
+			ex.printStackTrace();
+			throw new RuntimeException("test_serialization> Could not write the Lexicon ints: " + ints.toString());
+		}
+		finally {
+			if (oos != null) {
+				try {
+					oos.close();
+				} catch (IOException ex) {
+					ex.printStackTrace();
+					throw new RuntimeException("test_serialization> Could not close oos");
+				}
+			}
+			
+			if (fos != null) {
+				try {
+					fos.close();
+				} catch (IOException ex) {
+					ex.printStackTrace();
+					throw new RuntimeException("test_serialization> Could not close fos");
+				}
+			}
+		}
+		
+		// READ
+		
+		FileInputStream fis = null;
+		ObjectInputStream ois = null;
+		
+		try {
+			fis = new FileInputStream(file);
+			ois = new ObjectInputStream(fis);
+			
+			ints = (Lexicon<Integer>) ois.readObject();
+			
+			System.out.println("test_serialization> De-Serialized ints: " + ints.toString());
+		} catch (IOException | ClassNotFoundException ex) {
+			ex.printStackTrace();
+			throw new RuntimeException("test_serialization> Could not read the Lexicon ints: " + ints.toString());
+		}
+		finally {
+			if (ois != null) {
+				try {
+					ois.close();
+				} catch (IOException ex) {
+					ex.printStackTrace();
+					throw new RuntimeException("test_serialization> Could not close ois");
+				}
+			}
+			
+			if (fis != null) {
+				try {
+					fis.close();
+				} catch (IOException ex) {
+					ex.printStackTrace();
+					throw new RuntimeException("test_serialization> Could not close fis");
+				}
+			}
+		}
+		
+		// DELETE SERIALIZATION FILE
+		if (!file.exists())
+			throw new RuntimeException("test_serialization> The serialization file does not exist. Where did it go?");
+		
+		if (!file.delete())
+			System.out.println("\u001B[31mtest_serialization> The serialization file could not be deleted. Please delete it manually\u001B[0m");
 	}
 	
 	/* OVERRIDE */

@@ -1,6 +1,7 @@
 package fr.berger.enhancedlist.lexicon;
 
 import fr.berger.enhancedlist.Couple;
+import fr.berger.enhancedlist.ListUtil;
 import fr.berger.enhancedlist.lexicon.eventhandlers.AddHandler;
 import fr.berger.enhancedlist.lexicon.eventhandlers.GetHandler;
 import fr.berger.enhancedlist.lexicon.eventhandlers.RemoveHandler;
@@ -8,6 +9,9 @@ import fr.berger.enhancedlist.lexicon.eventhandlers.SetHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.lang.reflect.Array;
 import java.util.*;
@@ -16,22 +20,34 @@ import java.util.function.*;
 // http://server2client.com/images/collectionhierarchy.jpg
 // https://docs.oracle.com/javase/tutorial/collections/custom-implementations/index.html
 
+/**
+ * Lexicon is a list manager, like List, ArrayList and Set. However, Lexicon extends from the Observable pattern and
+ * also have event handlers when it is used. Those events are AddHandler, GetHandler, SetHandler and RemoveHandler.
+ * Each time one of those events are called, first Lexicon notify all the observers with the element which is added/
+ * gotten/set/removed and then it calls all the event handlers for more precision. You can use either the Observer
+ * pattern or the handlers to manage the events, both are not required.
+ * Lexicon has rules which can be set as you want. By default, Lexicon accepts duplicated and null value, and each time
+ * you use the list, it is in an non-synchronized context. However, you can change those settings.
+ * @param <T> The type of the object to save in the Lexicon instance
+ */
 @SuppressWarnings("ConstantConditions")
 public class Lexicon<T> extends Observable implements Collection<T>, Serializable {
+	
+	private static final long serialVersionUID = -8760304915380000309L;
 	
 	@Nullable
 	private T[] array;
 	
 	@NotNull
-	private transient ArrayList<AddHandler<T>> addHandlers = new ArrayList<>();
+	private ArrayList<AddHandler<T>> addHandlers = new ArrayList<>();
 	@NotNull
-	private transient ArrayList<GetHandler<T>> getHandlers = new ArrayList<>();
+	private ArrayList<GetHandler<T>> getHandlers = new ArrayList<>();
 	@NotNull
-	private transient ArrayList<SetHandler<T>> setHandlers = new ArrayList<>();
+	private ArrayList<SetHandler<T>> setHandlers = new ArrayList<>();
 	@NotNull
-	private transient ArrayList<RemoveHandler<T>> removeHandlers = new ArrayList<>();
+	private ArrayList<RemoveHandler<T>> removeHandlers = new ArrayList<>();
 	@Nullable
-	private transient Class<T> clazz;
+	private Class<T> clazz;
 	private boolean acceptDuplicates = true;
 	private boolean acceptNullValues = true;
 	private boolean synchronizedAccess = false;
@@ -102,6 +118,34 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 	}
 	protected void snap() {
 		snap(null);
+	}
+	
+	@SuppressWarnings("unchecked")
+	private void writeObject(@NotNull ObjectOutputStream stream) throws IOException {
+		stream.writeObject(array);
+		stream.writeObject(addHandlers);
+		stream.writeObject(getHandlers);
+		stream.writeObject(setHandlers);
+		stream.writeObject(removeHandlers);
+		stream.writeBoolean(acceptDuplicates);
+		stream.writeBoolean(acceptNullValues);
+		stream.writeBoolean(synchronizedAccess);
+		stream.writeObject(clazz);
+		stream.writeInt(actualSize);
+	}
+	
+	@SuppressWarnings("unchecked")
+	private void readObject(@NotNull ObjectInputStream stream) throws IOException, ClassNotFoundException {
+		array = (T[]) stream.readObject();
+		setAddHandlers((ArrayList<AddHandler<T>>) stream.readObject());
+		setGetHandlers((ArrayList<GetHandler<T>>) stream.readObject());
+		setSetHandlers((ArrayList<SetHandler<T>>) stream.readObject());
+		setRemoveHandlers((ArrayList<RemoveHandler<T>>) stream.readObject());
+		setAcceptDuplicates(stream.readBoolean());
+		setAcceptNullValues(stream.readBoolean());
+		setSynchronizedAccess(stream.readBoolean());
+		setClazz((Class<T>) stream.readObject());
+		actualSize = stream.readInt();
 	}
 	
 	@SuppressWarnings("WeakerAccess")
@@ -289,7 +333,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		if (!checkArrayNullity())
 			return null;
 		
-		checkIndex(index);
+		ListUtil.checkIndexException(index, this);
 		
 		T element = array[index];
 		
@@ -309,7 +353,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 	}
 	@SuppressWarnings("unchecked")
 	private T set_content(int index, @Nullable T element) {
-		checkIndex(index);
+		ListUtil.checkIndexException(index, this);
 		
 		if (!isAcceptNullValues() && element == null)
 			return null;
@@ -472,6 +516,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 	}
 	private T remove_content(int index) {
 		checkIndex(index);
+		ListUtil.checkIndexException(index, this);
 		
 		T oldValue = get(index);
 		
@@ -497,8 +542,8 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 			swap_content(index1, index2);
 	}
 	private void swap_content(int index1, int index2) {
-		checkIndex(index1);
-		checkIndex(index2);
+		ListUtil.checkIndexException(index1, this);
+		ListUtil.checkIndexException(index2, this);
 		
 		T temp = get(index1);
 		set(index1, get(index2));
