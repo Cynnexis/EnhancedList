@@ -31,7 +31,7 @@ import java.util.function.*;
  * @param <T> The type of the object to save in the Lexicon instance
  */
 @SuppressWarnings("ConstantConditions")
-public class Lexicon<T> extends Observable implements Collection<T>, Serializable {
+public class Lexicon<T> extends Observable implements Collection<T>, Serializable, Cloneable {
 	
 	private static final long serialVersionUID = -8760304915380000309L;
 	
@@ -351,6 +351,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		else
 			return set_content(index, element);
 	}
+	@Nullable
 	@SuppressWarnings("unchecked")
 	private T set_content(int index, @Nullable T element) {
 		ListUtil.checkIndexException(index, this);
@@ -448,7 +449,9 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		
 		boolean problem = false;
 		
-		while (c.iterator().hasNext()) {
+		Object[] objects = c.toArray();
+		
+		for (Object object : objects) {
 			T t = c.iterator().next();
 			
 			if (!add(t))
@@ -542,12 +545,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 			swap_content(index1, index2);
 	}
 	private void swap_content(int index1, int index2) {
-		ListUtil.checkIndexException(index1, this);
-		ListUtil.checkIndexException(index2, this);
-		
-		T temp = get(index1);
-		set(index1, get(index2));
-		set(index2, temp);
+		ListUtil.swap(this, index1, index2);
 	}
 	
 	@Override
@@ -566,6 +564,10 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 	@Override
 	public boolean isEmpty() {
 		return size() == 0;
+	}
+	
+	public void disarray() {
+		ListUtil.disarray(this);
 	}
 	
 	/* OVERRIDES */
@@ -808,6 +810,21 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 			a[size()] = null;
 		
 		return a;
+	}
+	
+	@NotNull
+	public List<T> toList() {
+		List<T> list = new ArrayList<>(size());
+		list.addAll(this);
+		
+		return list;
+	}
+	
+	public void fromList(@NotNull List<T> list) {
+		clear();
+		
+		for (int i = 0, max = list.size(); i < max; i++)
+			add(list.get(i));
 	}
 	
 	/**

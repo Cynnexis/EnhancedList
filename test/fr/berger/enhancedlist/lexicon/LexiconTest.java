@@ -9,8 +9,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.function.Executable;
 
 import java.io.*;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Observable;
@@ -388,6 +390,35 @@ class LexiconTest implements Observer {
 		
 		if (!file.delete())
 			System.out.println("\u001B[31mtest_serialization> The serialization file could not be deleted. Please delete it manually\u001B[0m");
+	}
+	
+	@Test
+	void test_disarray() {
+		//Preemptively
+		Assertions.assertTimeout(Duration.ofSeconds(5), new Executable() {
+			@Override
+			public void execute() throws Throwable {
+				Lexicon<Integer> copy = new Lexicon<>(ints);
+				System.out.println("LexiconTest.test_disarray> Before disarray: " + ints.toString());
+				ints.disarray();
+				System.out.println("LexiconTest.test_disarray> After disarray: " + ints.toString());
+				Assertions.assertEquals(copy.size(), ints.size());
+				
+				// STATISTICS
+				int numberOfUnchangedElements = 0;
+				int numberOfElements = ints.size();
+				
+				for (int i = 0; i < numberOfElements; i++)
+					if (Objects.equals(copy.get(i), ints.get(i)))
+						numberOfUnchangedElements++;
+				
+				double percentageOfUnchangedElements = (((double) numberOfUnchangedElements)/((double) numberOfElements)) * 100.0;
+				
+				System.out.println("LexiconTest.test_disarray> The percentage of unchanged element is " + percentageOfUnchangedElements + "%.");
+				if (percentageOfUnchangedElements >= 25.0)
+					Assertions.fail("LexiconTest.test_disarray> The percentage of unchanged elements is too big: " + percentageOfUnchangedElements + "%.");
+			}
+		});
 	}
 	
 	/* OVERRIDE */
