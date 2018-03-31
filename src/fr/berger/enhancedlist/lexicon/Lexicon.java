@@ -1,5 +1,6 @@
 package fr.berger.enhancedlist.lexicon;
 
+import fr.berger.beyondcode.util.EnhancedObservable;
 import fr.berger.enhancedlist.Couple;
 import fr.berger.enhancedlist.ListUtil;
 import fr.berger.enhancedlist.lexicon.eventhandlers.AddHandler;
@@ -31,7 +32,7 @@ import java.util.function.*;
  * @param <T> The type of the object to save in the Lexicon instance
  */
 @SuppressWarnings("ConstantConditions")
-public class Lexicon<T> extends Observable implements Collection<T>, Serializable, Cloneable {
+public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Serializable, Cloneable {
 	
 	private static final long serialVersionUID = -8760304915380000309L;
 	
@@ -107,18 +108,6 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 	}
 	
 	/* METHODS */
-	
-	/**
-	 * Notify all observers that a modification occurred
-	 */
-	@SuppressWarnings("WeakerAccess")
-	protected void snap(@Nullable T element) {
-		setChanged();
-		notifyObservers(element);
-	}
-	protected void snap() {
-		snap(null);
-	}
 	
 	@SuppressWarnings("unchecked")
 	private void writeObject(@NotNull ObjectOutputStream stream) throws IOException {
@@ -452,7 +441,7 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		Object[] objects = c.toArray();
 		
 		for (Object object : objects) {
-			T t = c.iterator().next();
+			T t = (T) object;
 			
 			if (!add(t))
 				problem = true;

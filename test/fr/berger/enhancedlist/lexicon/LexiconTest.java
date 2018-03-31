@@ -41,7 +41,13 @@ class LexiconTest implements Observer {
 		ints.add(3);
 		ints.add(4);
 		ints.add(5);
-		ints.addAll(6, 7, 8, 9, 10);
+		ints.addAll(6, 7, 8);
+		
+		ArrayList<Integer> arrayList = new ArrayList<>(2);
+		arrayList.add(9);
+		arrayList.add(10);
+		
+		ints.addAll(arrayList);
 		
 		add = false;
 		get = false;
