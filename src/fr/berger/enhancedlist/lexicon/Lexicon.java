@@ -570,6 +570,10 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 		ListUtil.disarray(this);
 	}
 	
+	public void sort(@NotNull Comparator<T> comparator) {
+		Arrays.sort(array, 0, size(), comparator);
+	}
+	
 	/* OVERRIDES */
 	
 	/**
@@ -1163,6 +1167,9 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 	
 	public void setAcceptDuplicates(boolean acceptDuplicates) {
 		this.acceptDuplicates = acceptDuplicates;
+		
+		if (!this.acceptDuplicates)
+			deleteDuplications();
 	}
 	
 	@SuppressWarnings({"WeakerAccess", "BooleanMethodIsAlwaysInverted"})
@@ -1172,6 +1179,9 @@ public class Lexicon<T> extends Observable implements Collection<T>, Serializabl
 	
 	public void setAcceptNullValues(boolean acceptNullValues) {
 		this.acceptNullValues = acceptNullValues;
+		
+		if (!this.acceptNullValues)
+			deleteNullElement();
 	}
 	
 	@SuppressWarnings("WeakerAccess")

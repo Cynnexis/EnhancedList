@@ -10,13 +10,11 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.*;
 import java.time.Duration;
-import java.util.Collections;
-import java.util.Objects;
-import java.util.Observable;
-import java.util.Observer;
+import java.util.*;
 import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -419,6 +417,55 @@ class LexiconTest implements Observer {
 					Assertions.fail("LexiconTest.test_disarray> The percentage of unchanged elements is too big: " + percentageOfUnchangedElements + "%.");
 			}
 		});
+	}
+	
+	@Test
+	void test_sort() {
+		// Ascending Sorting
+		ints.disarray();
+		ints.sort((a, b) -> a - b);
+		
+		System.out.println("LexiconTest.test_sort> Ascending sort: " + ints.toString());
+		
+		for (int i = 0; i < ints.size(); i++)
+			Assertions.assertEquals(i, ints.get(i).intValue());
+		
+		
+		// Descending Sorting
+		ints.disarray();
+		ints.sort((a, b) -> b - a);
+		
+		System.out.println("LexiconTest.test_sort> Descending sort: " + ints.toString());
+		
+		for (int i = 0; i < ints.size(); i++)
+			Assertions.assertEquals(ints.size() - i - 1, ints.get(i).intValue());
+		
+		
+		// Ascending Parity Sorting
+		ints.disarray();
+		ints.sort((a, b) -> {
+			if (a % 2 == 0) {
+				if (b % 2 == 0)
+					return a - b;
+				else
+					return -1;
+			}
+			else {
+				if (b % 2 == 0)
+					return 1;
+				else
+					return a - b;
+			}
+		});
+		
+		System.out.println("LexiconTest.test_sort> Ascending Parity sort: " + ints.toString());
+		
+		int pivot = (int) Math.floor((double)ints.size() / 2.0);
+		for (int i = 0; i < pivot; i++)
+			Assertions.assertEquals( i * 2, ints.get(i).intValue());
+		
+		for (int i = pivot + 1; i < ints.size(); i++)
+			Assertions.assertEquals( (i - (pivot + 1)) * 2 + 1, ints.get(i).intValue());
 	}
 	
 	/* OVERRIDE */
