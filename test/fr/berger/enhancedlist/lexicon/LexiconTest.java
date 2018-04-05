@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
+import org.opentest4j.AssertionFailedError;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.*;
@@ -198,6 +199,29 @@ class LexiconTest implements Observer {
 		
 		System.out.println("test_nullElement> ints.size() " + ints.size());
 		Assertions.assertEquals(4, ints.size());
+	}
+	
+	@Test
+	void test_remove() {
+		System.out.println("LexiconTest.test_remove> Delete by index");
+		for (int i = 0; !ints.isEmpty(); i++) {
+			ints.remove(0);
+			
+			System.out.println("LexiconTest.test_remove> ints: " + ints.toString());
+			for (int j = 0; j < ints.size(); j++)
+				Assertions.assertEquals(j + 1 + i, ints.get(j).intValue());
+		}
+		
+		// Now, restart but this time, delete by object
+		setup();
+		System.out.println("LexiconTest.test_remove> Delete by object");
+		for (int i = 0; !ints.isEmpty(); i++) {
+			ints.remove((Integer) i); // cast is necessary to call remove(Object) instead of remove(int)
+			
+			System.out.println("LexiconTest.test_remove> ints: " + ints.toString());
+			for (int j = 0; j < ints.size(); j++)
+				Assertions.assertEquals(j + 1 + i, ints.get(j).intValue());
+		}
 	}
 	
 	@Test

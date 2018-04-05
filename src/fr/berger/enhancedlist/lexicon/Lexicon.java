@@ -507,7 +507,6 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 			return remove_content(index);
 	}
 	private T remove_content(int index) {
-		checkIndex(index);
 		ListUtil.checkIndexException(index, this);
 		
 		T oldValue = get(index);
