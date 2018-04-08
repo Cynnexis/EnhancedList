@@ -560,7 +560,7 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 	
 	public synchronized void sort(@NotNull Comparator<T> comparator) {
 		if (array != null && size() > 0)
-			Arrays.sort(array, comparator);
+			Arrays.sort(array, 0, size(), comparator);
 	}
 	
 	/* OVERRIDES */

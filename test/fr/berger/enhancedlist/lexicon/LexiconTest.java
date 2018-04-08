@@ -496,6 +496,12 @@ class LexiconTest implements Observer {
 		
 		for (int i = pivot + 1; i < ints.size(); i++)
 			Assertions.assertEquals( (i - (pivot + 1)) * 2 + 1, ints.get(i).intValue());
+		
+		// Test with null elements
+		Lexicon<Integer> list = new Lexicon<>(Integer.class, 3);
+		list.add(2);
+		list.add(1);
+		list.sort(Integer::compareTo);
 	}
 	
 	/* OVERRIDE */
