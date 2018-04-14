@@ -1,17 +1,8 @@
 package fr.berger.enhancedlist.lexicon;
 
-import fr.berger.enhancedlist.lexicon.eventhandlers.AddHandler;
-import fr.berger.enhancedlist.lexicon.eventhandlers.GetHandler;
-import fr.berger.enhancedlist.lexicon.eventhandlers.RemoveHandler;
-import fr.berger.enhancedlist.lexicon.eventhandlers.SetHandler;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.util.Observable;
-import java.util.Observer;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class LexiconBuilderTest {
 	
@@ -34,7 +25,7 @@ class LexiconBuilderTest {
 		hasObserved = false;
 	}
 	
-	@SuppressWarnings("unchecked")
+	//@SuppressWarnings("unchecked")
 	@Test
 	void test() {
 		Lexicon<Integer> lexicon = intsBuilder
