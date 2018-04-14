@@ -284,6 +284,13 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 		return array.length;
 	}
 	
+	/**
+	 * Tru to instantiate the array.
+	 * As Lexicon has an array of T[], the size of the generic type must be known. To do so, each time the user try
+	 * to add a new element, Lexicon fetch the class (through element.getClass()). However, sometimes there is no class
+	 * of the element...
+	 * @return Return <c>true</c> if the array is not null or has been instantiated, <c>false</c> otherwise.
+	 */
 	@SuppressWarnings({"BooleanMethodIsAlwaysInverted", "unchecked"})
 	private synchronized boolean checkArrayNullity() {
 		if (array == null) {
@@ -310,6 +317,22 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 			throw new ArrayIndexOutOfBoundsException();
 	}
 	
+	
+	@Nullable
+	public T get(int index, @Nullable T defaultValue) {
+		if (isSynchronizedAccess()) {
+			try {
+				synchronized (this) {
+					return get_content(index, defaultValue);
+				}
+			} catch (Throwable throwable) {
+				throwable.printStackTrace();
+				return defaultValue;
+			}
+		}
+		else
+			return get_content(index, defaultValue);
+	}
 	@Nullable
 	public T get(int index) {
 		if (isSynchronizedAccess()) {
@@ -321,9 +344,28 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 			return get_content(index);
 	}
 	@Nullable
+	private T get_content(int index, @Nullable T defaultValue) {
+		if (!checkArrayNullity())
+			return defaultValue;
+		
+		if (!ListUtil.checkIndex(index, this))
+			return defaultValue;
+		
+		T element;
+		try {
+			element = array[index];
+		} catch (Throwable throwable) {
+			throwable.printStackTrace();
+			return defaultValue;
+		}
+		
+		triggerGetHandlers(index, element);
+		return element;
+	}
+	@Nullable
 	private T get_content(int index) {
 		if (!checkArrayNullity())
-			return null;
+			throw new InstantiationError();
 		
 		ListUtil.checkIndexException(index, this);
 		

@@ -1,6 +1,7 @@
 package fr.berger.enhancedlist.lexicon;
 
 import fr.berger.enhancedlist.Couple;
+import fr.berger.enhancedlist.ListUtil;
 import fr.berger.enhancedlist.exceptions.EmptyListException;
 import fr.berger.enhancedlist.lexicon.eventhandlers.AddHandler;
 import fr.berger.enhancedlist.lexicon.eventhandlers.GetHandler;
@@ -15,6 +16,7 @@ import org.opentest4j.AssertionFailedError;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.*;
+import java.math.BigInteger;
 import java.time.Duration;
 import java.util.*;
 import java.util.logging.Logger;
@@ -65,6 +67,7 @@ class LexiconTest implements Observer {
 	
 	@Test
 	void test_gettingElements() {
+		/* Test normal gets */
 		for (int i = 0; i < ints.size(); i++) {
 			System.out.println("test_gettingElements> ints[" + i + "] = " + ints.get(i).toString());
 			Assertions.assertEquals(i, ints.get(i).intValue());
@@ -73,7 +76,22 @@ class LexiconTest implements Observer {
 		Assertions.assertEquals(0, ints.first().intValue());
 		Assertions.assertEquals(ints.size() - 1, ints.last().intValue());
 		
-		// Test exception
+		/* Test 'defaultValue' gets */
+		System.out.println();
+		for (int i = -5; i <= ints.size() + 10; i++) {
+			Integer element = ints.get(i, null);
+			
+			System.out.println("test_gettingElements> ints[" + i + "] = " + (element != null ? element.toString() : "(null)"));
+			if (ListUtil.checkIndex(i, ints))
+				Assertions.assertEquals(i, element.intValue());
+			else
+				Assertions.assertNull(element);
+		}
+		
+		Assertions.assertEquals(0, ints.first(Integer.MAX_VALUE).intValue());
+		Assertions.assertEquals(ints.size() - 1, ints.last(Integer.MIN_VALUE).intValue());
+		
+		/* Test exceptions */
 		try {
 			ints.get(11);
 			
@@ -118,6 +136,7 @@ class LexiconTest implements Observer {
 	
 	@Test
 	void test_autoSetClass() {
+		/* Test with class */
 		Lexicon<Float> floats = new Lexicon<>();
 		
 		System.out.println("test_autoSetClass> floats.getClazz() : " + Objects.toString(floats.getClazz()));
@@ -133,6 +152,15 @@ class LexiconTest implements Observer {
 			System.out.println("test_autoSetClass> floats[" + i + "] = " + floats.get(i).toString());
 			Assertions.assertEquals(i, (int) Math.round(floats.get(i)));
 		}
+		
+		/* Test without class */
+		Lexicon<Date> dates = new Lexicon<>();
+		// Here, add a null element. 'dates' has no information about the class of the generic type 'Date'
+		boolean returnedValue = dates.add(null);
+		System.out.println("test_autoSetClass> returned value of dates.add(null): " + returnedValue);
+		Assertions.assertTrue(returnedValue);
+		Assertions.assertEquals(1, dates.size());
+		Assertions.assertNull(dates.get(0));
 	}
 	
 	@Test
