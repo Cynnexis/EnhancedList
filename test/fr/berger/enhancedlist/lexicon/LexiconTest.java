@@ -1,6 +1,7 @@
 package fr.berger.enhancedlist.lexicon;
 
 import fr.berger.enhancedlist.Couple;
+import fr.berger.enhancedlist.exceptions.EmptyListException;
 import fr.berger.enhancedlist.lexicon.eventhandlers.AddHandler;
 import fr.berger.enhancedlist.lexicon.eventhandlers.GetHandler;
 import fr.berger.enhancedlist.lexicon.eventhandlers.RemoveHandler;
@@ -69,6 +70,9 @@ class LexiconTest implements Observer {
 			Assertions.assertEquals(i, ints.get(i).intValue());
 		}
 		
+		Assertions.assertEquals(0, ints.first().intValue());
+		Assertions.assertEquals(ints.size() - 1, ints.last().intValue());
+		
 		// Test exception
 		try {
 			ints.get(11);
@@ -77,12 +81,38 @@ class LexiconTest implements Observer {
 		} catch (IndexOutOfBoundsException ignored) {
 			System.out.println("test_gettingElements> IndexOutOfBoundsException caught");
 		}
+		
 		try {
 			ints.get(-1);
 			
 			Assertions.fail("test_gettingElements> Lexicon should have throw exception.");
 		} catch (IndexOutOfBoundsException ignored) {
 			System.out.println("test_gettingElements> IndexOutOfBoundsException caught");
+		}
+		
+		Lexicon<Object> list = new Lexicon<>(Object.class);
+		String defaultValue = "This is the default value if the list is empty.";
+		
+		Assertions.assertEquals(defaultValue, list.first(defaultValue));
+		Assertions.assertEquals(0, list.first(0));
+		Assertions.assertNull(list.first(null));
+		
+		Assertions.assertEquals(defaultValue, list.last(defaultValue));
+		Assertions.assertEquals(0, list.last(0));
+		Assertions.assertNull(list.last(null));
+		
+		try {
+			list.first();
+			Assertions.fail("test_gettingElements> Lexicon should have throw exception.");
+		} catch (EmptyListException ignored) {
+			System.out.println("test_gettingElements> EmptyListException caught");
+		}
+		
+		try {
+			list.last();
+			Assertions.fail("test_gettingElements> Lexicon should have throw exception.");
+		} catch (EmptyListException ignored) {
+			System.out.println("test_gettingElements> EmptyListException caught");
 		}
 	}
 	

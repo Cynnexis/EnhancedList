@@ -3,6 +3,7 @@ package fr.berger.enhancedlist.lexicon;
 import fr.berger.beyondcode.util.EnhancedObservable;
 import fr.berger.enhancedlist.Couple;
 import fr.berger.enhancedlist.ListUtil;
+import fr.berger.enhancedlist.exceptions.EmptyListException;
 import fr.berger.enhancedlist.lexicon.eventhandlers.AddHandler;
 import fr.berger.enhancedlist.lexicon.eventhandlers.GetHandler;
 import fr.berger.enhancedlist.lexicon.eventhandlers.RemoveHandler;
@@ -309,6 +310,7 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 			throw new ArrayIndexOutOfBoundsException();
 	}
 	
+	@Nullable
 	public T get(int index) {
 		if (isSynchronizedAccess()) {
 			synchronized (this) {
@@ -318,6 +320,7 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 		else
 			return get_content(index);
 	}
+	@Nullable
 	private T get_content(int index) {
 		if (!checkArrayNullity())
 			return null;
@@ -328,6 +331,34 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 		
 		triggerGetHandlers(index, element);
 		return element;
+	}
+	
+	@Nullable
+	public T first(@Nullable T defaultValue) {
+		if (size() < 1)
+			return defaultValue;
+		
+		return get(0);
+	}
+	@Nullable
+	public T first() {
+		if (size() < 1)
+			throw new EmptyListException();
+		
+		return get(0);
+	}
+	
+	public T last(@Nullable T defaultValue) {
+		if (size() < 1)
+			return defaultValue;
+		
+		return get(size() - 1);
+	}
+	public T last() {
+		if (size() < 1)
+			throw new EmptyListException();
+		
+		return get(size() - 1);
 	}
 	
 	@SuppressWarnings({"WeakerAccess", "UnusedReturnValue"})
