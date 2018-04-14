@@ -46,7 +46,8 @@ class LexiconBuilderTest {
 				.addSetHandlers((index, element) -> setHandler = true)
 				.addRemoveHandlers((index, element) -> removeHandler = true)
 				.addObserver((observable, o) -> hasObserved = true)
-				.addAll(0, 1, 2, 3, 4, 5, 6, 7)
+				.addAll(0, 1, 2, 4, 3, 5, 6, 7)
+				.swap(3, 4)
 				.add(8)
 				.setOrAdd(9, 9)
 				.setOrAdd(-1, 10)
@@ -66,7 +67,7 @@ class LexiconBuilderTest {
 		Assertions.assertEquals(1, lexicon.getRemoveHandlers().size());
 		Assertions.assertTrue(addHandler);
 		Assertions.assertTrue(getHandler);
-		Assertions.assertFalse(setHandler);
+		Assertions.assertTrue(setHandler);
 		Assertions.assertTrue(removeHandler);
 		Assertions.assertTrue(hasObserved);
 		

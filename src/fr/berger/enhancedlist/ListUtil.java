@@ -66,9 +66,18 @@ public class ListUtil {
 		checkIndexException(index1, lexicon);
 		checkIndexException(index2, lexicon);
 		
+		// Stop the duplicates-rule just for the swap
+		boolean acceptDuplicates = lexicon.isAcceptDuplicates();
+		if (!acceptDuplicates)
+			lexicon.setAcceptDuplicates(true);
+		
 		T temp = lexicon.get(index1);
 		lexicon.set(index1, lexicon.get(index2));
 		lexicon.set(index2, temp);
+		
+		// Re-activate the duplicate-rule after the swap
+		if (!acceptDuplicates)
+			lexicon.setAcceptDuplicates(false);
 	}
 	
 	public static <T> List<T> disarray(@NotNull List<T> list) {
