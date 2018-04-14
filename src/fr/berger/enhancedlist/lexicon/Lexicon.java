@@ -87,8 +87,19 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 	}
 	@SuppressWarnings({"WeakerAccess", "unused"})
 	public Lexicon(@Nullable Collection<? extends T> elements) {
-		addAll(elements);
 		initialize();
+		if (elements instanceof Lexicon) {
+			Lexicon<T> list = (Lexicon<T>) elements;
+			setAddHandlers(list.getAddHandlers());
+			setGetHandlers(list.getGetHandlers());
+			setSetHandlers(list.getSetHandlers());
+			setRemoveHandlers(list.getRemoveHandlers());
+			setAcceptDuplicates(list.isAcceptDuplicates());
+			setAcceptNullValues(list.isAcceptNullValues());
+			setSynchronizedAccess(list.isSynchronizedAccess());
+			setClazz(list.getClazz());
+		}
+		addAll(elements);
 	}
 	@SafeVarargs
 	@SuppressWarnings({"WeakerAccess", "unused"})
@@ -511,9 +522,7 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 		
 		boolean problem = false;
 		
-		Object[] objects = c.toArray();
-		
-		for (Object object : objects) {
+		for (Object object : c) {
 			T t = (T) object;
 			
 			if (!add(t))
@@ -845,14 +854,20 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 	 * return list.toArray();
 	 * }</pre>
 	 */
-	@SuppressWarnings("NullableProblems")
+	@SuppressWarnings({"NullableProblems", "unchecked"})
 	@Nullable
 	@Override
 	public T[] toArray() {
 		if (array == null)
 			return null;
 		
-		return array.clone();
+		if (getClazz() == null)
+			throw new ClassFormatError();
+		
+		T[] arr = (T[]) Array.newInstance(getClazz(), size());
+		System.arraycopy(array,0, arr, 0, size());
+		
+		return arr;
 	}
 	
 	/**
@@ -933,16 +948,24 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 		if (c.size() == 0)
 			return true;
 		
-		boolean objectNotInListFound = true;
+		boolean objectNotInListFound = false;
 		
-		while (c.iterator().hasNext() && objectNotInListFound) {
-			Object o = c.iterator().next();
+		Iterator<?> iterator = c.iterator();
+		while (iterator.hasNext() && !objectNotInListFound) {
+			Object o = iterator.next();
 			
 			if(!contains(o))
-				objectNotInListFound = false;
+				objectNotInListFound = true;
 		}
 		
-		return objectNotInListFound;
+		return !objectNotInListFound;
+	}
+	@SafeVarargs
+	public final boolean containsAll(@Nullable T... elements) {
+		if (elements == null)
+			throw new NullPointerException();
+		
+		return containsAll(Arrays.asList(elements));
 	}
 	
 	/**
@@ -976,14 +999,21 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 		
 		boolean problem = false;
 		
-		while (c.iterator().hasNext()) {
-			Object o = c.iterator().next();
+		Iterator<?> iterator = c.iterator();
+		while (iterator.hasNext()) {
+			Object o = iterator.next();
 			
 			if (!remove(o))
 				problem = true;
 		}
 		
 		return !problem;
+	}
+	public boolean removeAll(@Nullable T... elements) {
+		if (elements == null)
+			throw new NullPointerException();
+		
+		return removeAll(Arrays.asList(elements));
 	}
 	
 	/**
@@ -1015,16 +1045,20 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 		if (c.size() == 0)
 			return true;
 		
-		while (c.iterator().hasNext()) {
-			Object o = c.iterator().next();
-			
-			for (int i = 0; i < size(); i++) {
-				if (!Objects.equals(o, get(i)))
-					remove(i);
+		for (int i = 0; i < size(); i++) {
+			if (!c.contains(get(i))) {
+				remove(get(i));
+				i--;
 			}
 		}
 		
 		return true;
+	}
+	public boolean retainAll(@Nullable T... elements) {
+		if (elements == null)
+			throw new NullPointerException();
+		
+		return retainAll(Arrays.asList(elements));
 	}
 	
 	/**

@@ -7,10 +7,7 @@ import fr.berger.enhancedlist.lexicon.eventhandlers.AddHandler;
 import fr.berger.enhancedlist.lexicon.eventhandlers.GetHandler;
 import fr.berger.enhancedlist.lexicon.eventhandlers.RemoveHandler;
 import fr.berger.enhancedlist.lexicon.eventhandlers.SetHandler;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.function.Executable;
 import org.opentest4j.AssertionFailedError;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
@@ -90,6 +87,15 @@ class LexiconTest implements Observer {
 		
 		Assertions.assertEquals(0, ints.first(Integer.MAX_VALUE).intValue());
 		Assertions.assertEquals(ints.size() - 1, ints.last(Integer.MIN_VALUE).intValue());
+		
+		// Contains
+		Assertions.assertTrue(ints.contains(1));
+		Assertions.assertTrue(ints.contains(6));
+		Assertions.assertTrue(ints.contains(9));
+		Assertions.assertFalse(ints.contains(11));
+		Assertions.assertFalse(ints.contains(-1));
+		Assertions.assertTrue(ints.containsAll( 0, 9, 1, 5, 6, 8, 7, 3, 3, 5, 4, 1, 9, 4, 8, 2, 6, 5, 0));
+		Assertions.assertFalse(ints.containsAll(0, 9, 1, 5, 6, 8, 7, 3, 3, 5, 4, 1, 9, 4, 8, 2, 6, 5, 11));
 		
 		/* Test exceptions */
 		try {
@@ -299,6 +305,24 @@ class LexiconTest implements Observer {
 			for (int j = 0; j < ints.size(); j++)
 				Assertions.assertEquals(j + 1 + i, ints.get(j).intValue());
 		}
+		
+		// Restart, and test removeAll
+		setup();
+		System.out.println("LexiconTest.test_remove> Delete many objects at once with removeAll");
+		ints.removeAll(5, 6, 7, 8, 9, 10);
+		System.out.println("LexiconTest.test_remove> New list: " + ints.toString());
+		Assertions.assertEquals(5, ints.size());
+		for (int i = 0, max = ints.size(); i < max; i++)
+			Assertions.assertEquals(i, ints.get(i).intValue());
+		
+		// Restart, and test retainAll
+		setup();
+		System.out.println("LexiconTest.test_remove> Delete many objects at once with retainAll");
+		ints.retainAll(0, 1, 2, 3, 4);
+		System.out.println("LexiconTest.test_remove> New list: " + ints.toString());
+		Assertions.assertEquals(5, ints.size());
+		for (int i = 0, max = ints.size(); i < max; i++)
+			Assertions.assertEquals(i, ints.get(i).intValue());
 	}
 	
 	@Test
@@ -353,6 +377,25 @@ class LexiconTest implements Observer {
 		
 		Assertions.assertEquals(newCap, list.capacity());
 		Assertions.assertEquals(newCap, s);
+	}
+	
+	@Test
+	void test_toArray() {
+		Integer[] arr1 = ints.toArray();
+		
+		System.out.println("LexiconTest.test_toArray> arr1: " + Arrays.toString(arr1));
+		Assertions.assertEquals(ints.size(), arr1.length);
+		for (int i = 0, max = arr1.length; i < max; i++)
+			Assertions.assertEquals(i, arr1[i].intValue());
+		
+		// To it again but after removing an element from the lexicon
+		ints.remove(ints.last());
+		Integer[] arr2 = ints.toArray();
+		
+		System.out.println("LexiconTest.test_toArray> arr2: " + Arrays.toString(arr2));
+		Assertions.assertEquals(ints.size(), arr2.length);
+		for (int i = 0, max = arr2.length; i < max; i++)
+			Assertions.assertEquals(i, arr2[i].intValue());
 	}
 	
 	@Test
