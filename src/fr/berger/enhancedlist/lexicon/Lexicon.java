@@ -424,7 +424,7 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 		if (!isAcceptDuplicates() && contains(element))
 			return null;
 		
-		if (getClazz() == null)
+		if (getClazz() == null && element != null)
 			setClazz((Class<T>) element.getClass());
 		
 		T oldValue = get(index);
@@ -535,6 +535,25 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 		}
 		
 		return !problem;
+	}
+	
+	/**
+	 * If <c>index</c> is in the range of the array, the method set at <c>index</c> the element <c>element</c>.
+	 * If <c>index</c> is not in the range, the method add <c>element</c> at the end of the list (and its index will
+	 * be <c>size() - 1</c>
+	 * @param index The index where to set the element. It can be any value (out of bound, and even negative)
+	 * @param element The element to set or add in the list
+	 * @return Return the index where the element is placed in the list
+	 */
+	public int setOrAdd(int index, @Nullable T element) {
+		if (!ListUtil.checkIndex(index, this)) {
+			add(element);
+			return size() - 1;
+		}
+		else {
+			set(index, element);
+			return index;
+		}
 	}
 	
 	/**

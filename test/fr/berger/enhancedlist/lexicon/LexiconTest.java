@@ -164,6 +164,25 @@ class LexiconTest implements Observer {
 	}
 	
 	@Test
+	void test_setOrAdd() {
+		Assertions.assertEquals(3, ints.setOrAdd(3, 30));
+		Assertions.assertEquals(30, ints.get(3).intValue());
+		Assertions.assertEquals(3, ints.setOrAdd(3, 3));
+		Assertions.assertEquals(3, ints.get(3).intValue());
+		
+		Assertions.assertEquals(11, ints.setOrAdd(11, 11));
+		Assertions.assertEquals(11, ints.get(11).intValue());
+		
+		Assertions.assertEquals(12, ints.setOrAdd(-1, 12));
+		Assertions.assertEquals(12, ints.get(12).intValue());
+		
+		Assertions.assertEquals(13, ints.setOrAdd(50, 13));
+		Assertions.assertEquals(13, ints.get(13).intValue());
+		
+		System.out.println("LexiconTest.test_setOrAdd> ints: " + ints.toString());
+	}
+	
+	@Test
 	void test_nullElement() {
 		// Check if objs can accept null value when its parameter is set to false
 		Lexicon<Object> objs = new Lexicon<>();
