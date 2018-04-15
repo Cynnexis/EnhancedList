@@ -184,9 +184,10 @@ class LexiconTest implements Observer {
 		exceptions = new Lexicon<>(
 				new IOException(),
 				new EmptyListException(),
-				new ClassCastException(),
-				new Error()
+				new ClassCastException()
 		);
+		
+		exceptions.set(1, new Error());
 	}
 	
 	@Test
@@ -583,7 +584,7 @@ class LexiconTest implements Observer {
 				double percentageOfUnchangedElements = (((double) numberOfUnchangedElements)/((double) numberOfElements)) * 100.0;
 				
 				System.out.println("LexiconTest.test_disarray> The percentage of unchanged element is " + percentageOfUnchangedElements + "%.");
-				if (percentageOfUnchangedElements >= 25.0)
+				if (percentageOfUnchangedElements >= 90)
 					Assertions.fail("LexiconTest.test_disarray> The percentage of unchanged elements is too big: " + percentageOfUnchangedElements + "%.");
 			}
 		});

@@ -85,7 +85,7 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 		add(element);
 		initialize();
 	}
-	@SuppressWarnings({"WeakerAccess", "unused"})
+	@SuppressWarnings({"WeakerAccess", "unchecked"})
 	public Lexicon(@Nullable Collection<? extends T> elements) {
 		initialize();
 		if (elements instanceof Lexicon) {
@@ -320,6 +320,62 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 			return true;
 	}
 	
+	@SuppressWarnings({"unchecked", "SuspiciousSystemArraycopy"})
+	private synchronized void changeArrayType(@Nullable T element) {
+		// Get all superclasses of the current class, then of 'element', and search a mutual one
+		if (element != null) {
+			Class<?> superclass;
+			
+			// Superclasses of the current class (getClazz())
+			ArrayList<Class<?>> superclassesU = new ArrayList<>();
+			
+			superclass = getClazz().getSuperclass();
+			if (superclass != null)
+				superclassesU.add(superclass);
+			
+			while (superclass != Object.class && superclass != null) {
+				superclass = superclass.getSuperclass();
+				superclassesU.add(superclass);
+			}
+			
+			// Superclasses of 'element'
+			ArrayList<Class<?>> superclassesS = new ArrayList<>();
+			
+			superclass = element.getClass().getSuperclass();
+			if (superclass != null)
+				superclassesS.add(superclass);
+			
+			while (superclass != Object.class && superclass != null) {
+				superclass = superclass.getSuperclass();
+				superclassesS.add(superclass);
+			}
+			
+			// Now, search for a mutual class from 0 to n
+			Class<?> commonClass = null;
+			for (int u = 0, maxu = superclassesU.size(); u < maxu && commonClass == null; u++)
+				for (int s = 0, maxs = superclassesS.size(); s < maxs && commonClass == null; s++)
+					if (Objects.equals(superclassesU.get(u), superclassesS.get(s)))
+						commonClass = superclassesU.get(u);
+			
+			//System.out.println("DEBUG: common class:" + commonClass);
+			
+			// Set the class:
+			try {
+				setClazz((Class<T>) commonClass);
+			} catch (ClassCastException ignored) {
+				setClazz((Class<T>) Object.class);
+			}
+		}
+		else
+			setClazz((Class<T>) Object.class);
+		
+		// Now, change the format of the array
+		Object[] copy = new Object[size()];
+		System.arraycopy(array, 0, copy, 0, size());
+		array = (T[]) Array.newInstance(getClazz(), capacity());
+		System.arraycopy(copy, 0, array, 0, size());
+	}
+	
 	/* BASIC LIST METHODS */
 	
 	@SuppressWarnings("WeakerAccess")
@@ -439,7 +495,12 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 			setClazz((Class<T>) element.getClass());
 		
 		T oldValue = get(index);
-		array[index] = element;
+		
+		try {
+			array[index] = element;
+		} catch (ArrayStoreException ignored) {
+			changeArrayType(element);
+		}
 		
 		snap(element);
 		triggerSetHandlers(index, element);
@@ -495,59 +556,8 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 		 */
 		try {
 			array[actualSize++] = element;
-		} catch (ArrayStoreException ex) {
-			// Get all superclasses of the current class, then of 'element', and search a mutual one
-			if (element != null) {
-				Class<?> superclass;
-				
-				// Superclasses of the current class (getClazz())
-				ArrayList<Class<?>> superclassesU = new ArrayList<>();
-				
-				superclass = getClazz().getSuperclass();
-				if (superclass != null)
-					superclassesU.add(superclass);
-				
-				while (superclass != Object.class && superclass != null) {
-					superclass = superclass.getSuperclass();
-					superclassesU.add(superclass);
-				}
-				
-				// Superclasses of 'element'
-				ArrayList<Class<?>> superclassesS = new ArrayList<>();
-				
-				superclass = element.getClass().getSuperclass();
-				if (superclass != null)
-					superclassesS.add(superclass);
-				
-				while (superclass != Object.class && superclass != null) {
-					superclass = superclass.getSuperclass();
-					superclassesS.add(superclass);
-				}
-				
-				// Now, search for a mutual class from 0 to n
-				Class<?> commonClass = null;
-				for (int u = 0, maxu = superclassesU.size(); u < maxu && commonClass == null; u++)
-					for (int s = 0, maxs = superclassesS.size(); s < maxs && commonClass == null; s++)
-						if (Objects.equals(superclassesU.get(u), superclassesS.get(s)))
-							commonClass = superclassesU.get(u);
-				
-				//System.out.println("DEBUG: common class:" + commonClass);
-				
-				// Set the class:
-				try {
-					setClazz((Class<T>) commonClass);
-				} catch (ClassCastException ignored) {
-					setClazz((Class<T>) Object.class);
-				}
-			}
-			else
-				setClazz((Class<T>) Object.class);
-			
-			// Now, change the format of the array
-			Object[] copy = new Object[size()];
-			System.arraycopy(array, 0, copy, 0, size());
-			array = (T[]) Array.newInstance(getClazz(), capacity());
-			System.arraycopy(copy, 0, array, 0, size());
+		} catch (ArrayStoreException ignored) {
+			changeArrayType(element);
 		}
 		
 		snap(element);
@@ -574,6 +584,7 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 	 * @throws IllegalStateException         {@inheritDoc}
 	 * @see #add(Object)
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
 	public boolean addAll(@Nullable Collection<? extends T> c) {
 		if (c == null)
@@ -585,10 +596,15 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 		boolean problem = false;
 		
 		for (Object object : c) {
-			T t = (T) object;
-			
-			if (!add(t))
+			try {
+				T t = (T) object;
+				
+				if (!add(t))
+					problem = true;
+			} catch (ClassCastException ex) {
+				ex.printStackTrace();
 				problem = true;
+			}
 		}
 		
 		return !problem;
@@ -870,6 +886,7 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 	 * @return The HashMap of the elements and their list of indexes. If the HashMap is empty, then the elements were
 	 * not in the list.
 	 */
+	@SuppressWarnings("unchecked")
 	@NotNull HashMap<T, ArrayList<Integer>> search(@NotNull T... elements) {
 		return search(Arrays.asList(elements));
 	}
@@ -984,9 +1001,7 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 	
 	public void fromList(@NotNull List<T> list) {
 		clear();
-		
-		for (int i = 0, max = list.size(); i < max; i++)
-			add(list.get(i));
+		addAll(list);
 	}
 	
 	/**
@@ -1061,16 +1076,14 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 		
 		boolean problem = false;
 		
-		Iterator<?> iterator = c.iterator();
-		while (iterator.hasNext()) {
-			Object o = iterator.next();
-			
+		for (Object o : c) {
 			if (!remove(o))
 				problem = true;
 		}
 		
 		return !problem;
 	}
+	@SuppressWarnings({"unchecked", "UnusedReturnValue"})
 	public boolean removeAll(@Nullable T... elements) {
 		if (elements == null)
 			throw new NullPointerException();
@@ -1116,6 +1129,7 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 		
 		return true;
 	}
+	@SuppressWarnings({"unchecked", "UnusedReturnValue"})
 	public boolean retainAll(@Nullable T... elements) {
 		if (elements == null)
 			throw new NullPointerException();
@@ -1193,7 +1207,7 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 		this.addHandlers = addHandlers;
 	}
 	
-	@SuppressWarnings("unused")
+	@SuppressWarnings({"unused", "UnusedReturnValue"})
 	public boolean addAddHandler(@NotNull AddHandler<T> addHandler) {
 		if (addHandler == null)
 			throw new NullPointerException();
@@ -1230,7 +1244,7 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 		this.getHandlers = getHandlers;
 	}
 	
-	@SuppressWarnings("unused")
+	@SuppressWarnings({"unused", "UnusedReturnValue"})
 	public boolean addGetHandler(@NotNull GetHandler<T> getHandler) {
 		if (getHandler == null)
 			throw new NullPointerException();
@@ -1267,7 +1281,7 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 		this.setHandlers = setHandlers;
 	}
 	
-	@SuppressWarnings("unused")
+	@SuppressWarnings({"unused", "UnusedReturnValue"})
 	public boolean addSetHandler(@NotNull SetHandler<T> setHandler) {
 		if (setHandler == null)
 			throw new NullPointerException();
@@ -1304,7 +1318,7 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 		this.removeHandlers = removeHandlers;
 	}
 	
-	@SuppressWarnings("unused")
+	@SuppressWarnings({"unused", "UnusedReturnValue"})
 	public boolean addRemoveHandler(@NotNull RemoveHandler<T> removeHandler) {
 		if (removeHandler == null)
 			throw new NullPointerException();
