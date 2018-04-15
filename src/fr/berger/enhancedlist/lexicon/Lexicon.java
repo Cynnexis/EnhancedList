@@ -486,7 +486,69 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 		if (array == null)
 			return false;
 		
-		array[actualSize++] = element;
+		/*
+		Imagine we have T as generic parameter, and the class of T has not been given by the user. Therefore, when
+		'add' is called, it will get automatically the class of the given element. But let us say that the given element
+		is not an instance of T but U, with U a class that inherited from T. Then, 'add' will get U.class. HOWEVER, now
+		the user add an instance of S, with S inherited from T. Here, an ArrayStoreException will occur. If that happen,
+		the method must change the class by searching a mutual superclass (T in our case)
+		 */
+		try {
+			array[actualSize++] = element;
+		} catch (ArrayStoreException ex) {
+			// Get all superclasses of the current class, then of 'element', and search a mutual one
+			if (element != null) {
+				Class<?> superclass;
+				
+				// Superclasses of the current class (getClazz())
+				ArrayList<Class<?>> superclassesU = new ArrayList<>();
+				
+				superclass = getClazz().getSuperclass();
+				if (superclass != null)
+					superclassesU.add(superclass);
+				
+				while (superclass != Object.class && superclass != null) {
+					superclass = superclass.getSuperclass();
+					superclassesU.add(superclass);
+				}
+				
+				// Superclasses of 'element'
+				ArrayList<Class<?>> superclassesS = new ArrayList<>();
+				
+				superclass = element.getClass().getSuperclass();
+				if (superclass != null)
+					superclassesS.add(superclass);
+				
+				while (superclass != Object.class && superclass != null) {
+					superclass = superclass.getSuperclass();
+					superclassesS.add(superclass);
+				}
+				
+				// Now, search for a mutual class from 0 to n
+				Class<?> commonClass = null;
+				for (int u = 0, maxu = superclassesU.size(); u < maxu && commonClass == null; u++)
+					for (int s = 0, maxs = superclassesS.size(); s < maxs && commonClass == null; s++)
+						if (Objects.equals(superclassesU.get(u), superclassesS.get(s)))
+							commonClass = superclassesU.get(u);
+				
+				//System.out.println("DEBUG: common class:" + commonClass);
+				
+				// Set the class:
+				try {
+					setClazz((Class<T>) commonClass);
+				} catch (ClassCastException ignored) {
+					setClazz((Class<T>) Object.class);
+				}
+			}
+			else
+				setClazz((Class<T>) Object.class);
+			
+			// Now, change the format of the array
+			Object[] copy = new Object[size()];
+			System.arraycopy(array, 0, copy, 0, size());
+			array = (T[]) Array.newInstance(getClazz(), capacity());
+			System.arraycopy(copy, 0, array, 0, size());
+		}
 		
 		snap(element);
 		triggerAddHandlers(size() - 1, element);

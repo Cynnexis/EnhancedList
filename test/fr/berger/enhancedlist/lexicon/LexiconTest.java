@@ -167,6 +167,26 @@ class LexiconTest implements Observer {
 		Assertions.assertTrue(returnedValue);
 		Assertions.assertEquals(1, dates.size());
 		Assertions.assertNull(dates.get(0));
+		
+		/* Test with inheritance */
+		Lexicon<Throwable> exceptions = new Lexicon<>(Throwable.class);
+		exceptions.add(new IOException());
+		exceptions.add(new EmptyListException());
+		exceptions.add(new ClassCastException());
+		exceptions.add(new Error());
+		
+		exceptions = new Lexicon<>();
+		exceptions.add(new IOException());
+		exceptions.add(new EmptyListException());
+		exceptions.add(new ClassCastException());
+		exceptions.add(new Error());
+		
+		exceptions = new Lexicon<>(
+				new IOException(),
+				new EmptyListException(),
+				new ClassCastException(),
+				new Error()
+		);
 	}
 	
 	@Test
