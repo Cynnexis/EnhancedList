@@ -1,6 +1,7 @@
 package fr.berger.enhancedlist.lexicon;
 
 import fr.berger.beyondcode.util.EnhancedObservable;
+import fr.berger.beyondcode.util.Irregular;
 import fr.berger.enhancedlist.Couple;
 import fr.berger.enhancedlist.ListUtil;
 import fr.berger.enhancedlist.exceptions.EmptyListException;
@@ -32,6 +33,7 @@ import java.util.function.*;
  * Lexicon has rules which can be set as you want. By default, Lexicon accepts duplicated and null value, and each time
  * you use the list, it is in an non-synchronized context. However, you can change those settings.
  * @param <T> The type of the object to save in the Lexicon instance
+ * @author Valentin Berger
  */
 @SuppressWarnings("ConstantConditions")
 public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Serializable, Cloneable {
@@ -443,6 +445,51 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 		return element;
 	}
 	
+	/**
+	 * Return a random element in the array from the indexes {@code minIndex} and {@code maxIndex} (both included)
+	 * @param minIndex The lower bound of the range of indexes (included)
+	 * @param maxIndex The greater bound of the range of indexes (included)
+	 * @return A random element in the array from the indexes {@code minIndex} and {@code maxIndex} (both included)
+	 */
+	@Nullable
+	public T getRandom(int minIndex, int maxIndex) {
+		ListUtil.checkIndexException(minIndex, this);
+		ListUtil.checkIndexException(maxIndex, this);
+		
+		return get(Irregular.rangeInt(minIndex, true, maxIndex, true));
+	}
+	/**
+	 * Return a random element in the array.
+	 * @return A random element in the array.
+	 */
+	@Nullable
+	public T getRandom() {
+		return getRandom(0, size() - 1);
+	}
+	/**
+	 * Return a random element in the array from the index {@code minIndex} (included)
+	 * @param minIndex The greater bound of the range of indexes (included)
+	 * @return A random element in the array from the index minIndex (included)
+	 */
+	@Nullable
+	public T getRandomFrom(int minIndex) {
+		return getRandom(minIndex, size() - 1);
+	}
+	/**
+	 * Return a random element in the array from the indexes 0 to {@code maxIndex} (both included)
+	 * @param maxIndex The lower bound of the range of indexes (included)
+	 * @return A random element in the array from the indexes 0 to {@code maxIndex} (both included)
+	 */
+	@Nullable
+	public T getRandomTo(int maxIndex) {
+		return getRandom(0, maxIndex);
+	}
+	
+	/**
+	 * Return the first element in the list if it exists, otherwise return {@code defaultValue}.
+	 * @param defaultValue The default value to return if the list is empty.
+	 * @return The first element in the list if the list is not empty, otherwise return {@code defaultValue}.
+	 */
 	@Nullable
 	public T first(@Nullable T defaultValue) {
 		if (size() < 1)
@@ -450,6 +497,12 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 		
 		return get(0);
 	}
+	/**
+	 * Return the first element in the list if it exists, otherwise throw EmptyListException.
+	 * @return The first element in the list if the list is not empty.
+	 * @throws EmptyListException Thrown if the list is empty
+	 * @see EmptyListException
+	 */
 	@Nullable
 	public T first() {
 		if (size() < 1)
@@ -458,12 +511,23 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 		return get(0);
 	}
 	
+	/**
+	 * Return the last element in the list if it exists, otherwise return {@code defaultValue}.
+	 * @param defaultValue The default value to return if the list is empty.
+	 * @return The last element in the list if the list is not empty, otherwise return {@code defaultValue}.
+	 */
 	public T last(@Nullable T defaultValue) {
 		if (size() < 1)
 			return defaultValue;
 		
 		return get(size() - 1);
 	}
+	/**
+	 * Return the last element in the list if it exists, otherwise throw EmptyListException.
+	 * @return The last element in the list if the list is not empty.
+	 * @throws EmptyListException Thrown if the list is empty
+	 * @see EmptyListException
+	 */
 	public T last() {
 		if (size() < 1)
 			throw new EmptyListException();
@@ -471,6 +535,12 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 		return get(size() - 1);
 	}
 	
+	/**
+	 * Set the element {@code element} at {@code index}.
+	 * @param index The index where to put {@code element}.
+	 * @param element The element to set in the list.
+	 * @return The element at {@code index} before {@code element} is set.
+	 */
 	@SuppressWarnings({"WeakerAccess", "UnusedReturnValue"})
 	public T set(int index, @Nullable T element) {
 		if (isSynchronizedAccess()) {
