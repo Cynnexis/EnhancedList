@@ -10,6 +10,7 @@ import fr.berger.enhancedlist.lexicon.eventhandlers.RemoveHandler;
 import fr.berger.enhancedlist.lexicon.eventhandlers.SetHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -545,7 +546,7 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 		checkCapacity(size() + 1);
 		
 		if (array == null)
-			return false;
+			throw new InstantiationError();
 		
 		/*
 		Imagine we have T as generic parameter, and the class of T has not been given by the user. Therefore, when
@@ -715,6 +716,147 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 		ListUtil.swap(this, index1, index2);
 	}
 	
+	public synchronized void shift(int startIndex, int shift, @Nullable T elementToPlaceInGap) {
+		ListUtil.checkIndexException(startIndex, this);
+		
+		if (shift < 1)
+			throw new IllegalArgumentException("shift must be greater or equal to 1.");
+		
+		// Check capacity()
+		if (checkCapacity(size() + shift) < size() + shift)
+			throw new InstantiationError("Cannot grow the array.");
+		
+		if (array == null)
+			throw new InstantiationError();
+		
+		System.arraycopy(array, startIndex, array, startIndex + shift, size() - (startIndex));
+		this.actualSize += shift;
+		
+		for (int i = startIndex; i < startIndex + shift; i++)
+			set(i, elementToPlaceInGap);
+	}
+	
+	/**
+	 * <p>
+	 * Insert {@code elements} in the array at index {@code i}.
+	 * </p>
+	 * <p>
+	 * Example:
+	 * {@code
+	 * [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+	 * insert(4, -1, -2, -3)
+	 * [0, 1, 2, 3, -1, -2, -3, 4, 5, 6, 7, 8, 9, 10]
+	 * }
+	 * </p>
+	 * @param i The index where the insertion will be.
+	 * @param elements The elements to insert.
+	 */
+	public void insertAll(int i, @Nullable Lexicon<T> elements) {
+		if (isSynchronizedAccess()) {
+			synchronized (this) {
+				insertAll_content(i, elements);
+			}
+		}
+		else
+			insertAll_content(i, elements);
+	}
+	/**
+	 * <p>
+	 * Insert {@code elements} in the array at index {@code i}.
+	 * </p>
+	 * <p>
+	 * Example:
+	 * {@code
+	 * [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+	 * insert(4, -1, -2, -3)
+	 * [0, 1, 2, 3, -1, -2, -3, 4, 5, 6, 7, 8, 9, 10]
+	 * }
+	 * </p>
+	 * @param i The index where the insertion will be.
+	 * @param elements The elements to insert.
+	 */
+	public void insertAll(int i, @Nullable Collection<T> elements) {
+		insertAll(i, new Lexicon<>(elements));
+	}
+	/**
+	 * <p>
+	 * Insert {@code elements} in the array at index {@code i}.
+	 * </p>
+	 * <p>
+	 * Example:
+	 * {@code
+	 * [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+	 * insert(4, -1, -2, -3)
+	 * [0, 1, 2, 3, -1, -2, -3, 4, 5, 6, 7, 8, 9, 10]
+	 * }
+	 * </p>
+	 * @param i The index where the insertion will be.
+	 * @param elements The elements to insert.
+	 */
+	@SuppressWarnings("unchecked")
+	public void insertAll(int i, @Nullable T... elements) {
+		insertAll(i, new Lexicon<>(elements));
+	}
+	
+	private void insertAll_content(int i, @Nullable Lexicon<T> elements) {
+		ListUtil.checkIndexException(i, this);
+		
+		if (elements == null)
+			throw new NullPointerException();
+		
+		if (elements.isEmpty())
+			return;
+		
+		boolean aNull = isAcceptNullValues();
+		boolean aDuplicates = isAcceptDuplicates();
+		
+		/* The following code is in synchronized because it will change the parameters of the current instance of
+		Lexicon, such as acceptNullValues and acceptDuplicates. */
+		synchronized (this) {
+			setAcceptNullValues(true);
+			setAcceptDuplicates(true);
+			
+			shift(i, elements.size(), null);
+			
+			// Fill the gap with "elements" values
+			for (int k = i; k < i + elements.size(); k++)
+				set(k, elements.get(k - i));
+			
+			setAcceptNullValues(aNull);
+			setAcceptDuplicates(aDuplicates);
+		}
+	}
+	
+	/**
+	 * <p>
+	 * Insert {@code element} in the array at index {@code i}.
+	 * </p>
+	 * <p>
+	 * Example:
+	 * {@code
+	 * [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+	 * insert(4, -1)
+	 * [0, 1, 2, 3, -1, 4, 5, 6, 7, 8, 9, 10]
+	 * }
+	 * </p>
+	 * @param i The index where the insertion will be.
+	 * @param element The element to insert.
+	 */
+	@SuppressWarnings("unchecked")
+	public void insert(int i, @Nullable T element) {
+		if (element == null)
+			throw new NullPointerException();
+		
+		insertAll(i, element);
+	}
+	
+	/**
+	 * The current length of the array.
+	 * Warning: the size represents the number of useful elements in the array. The total length of the array is the
+	 * capacity (size <= capacity)
+	 * @return The current size of the array
+	 * @see #capacity()
+	 */
 	@Override
 	public int size() {
 		if (actualSize < 0)
@@ -733,6 +875,9 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 		return size() == 0;
 	}
 	
+	/**
+	 * Switch the elements in the array.
+	 */
 	public void disarray() {
 		ListUtil.disarray(this);
 	}

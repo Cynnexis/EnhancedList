@@ -427,6 +427,166 @@ class LexiconTest implements Observer {
 	}
 	
 	@Test
+	void test_shift() {
+		/* IN THE MIDDLE */
+		System.out.println("LexiconTest.test_shift> IN THE MIDDLE");
+		System.out.println("LexiconTest.test_shift> ints:" + ints);
+		System.out.println("LexiconTest.test_shift> Shifting...");
+		ints.shift(4, 3, -1);
+		System.out.println("LexiconTest.test_shift> ints:" + ints);
+		
+		for (int i = 0; i < 4; i++)
+			Assertions.assertEquals(i, ints.get(i).intValue());
+		
+		for (int i = 4; i <= 6; i++)
+			Assertions.assertEquals(-1, ints.get(i).intValue());
+		
+		for (int i = 7; i < ints.size(); i++)
+			Assertions.assertEquals(i - 3, ints.get(i).intValue());
+		
+		/* AT THE BEGINNING */
+		setup();
+		System.out.println();
+		System.out.println("LexiconTest.test_shift> AT THE BEGINNING");
+		System.out.println("LexiconTest.test_shift> ints:" + ints);
+		System.out.println("LexiconTest.test_shift> Shifting...");
+		ints.shift(0, 3, -1);
+		System.out.println("LexiconTest.test_shift> ints:" + ints);
+		
+		for (int i = 0; i <= 2; i++)
+			Assertions.assertEquals(-1, ints.get(i).intValue());
+		
+		for (int i = 3; i < ints.size(); i++)
+			Assertions.assertEquals(i - 3, ints.get(i).intValue());
+		
+		/* AT THE END */
+		setup();
+		System.out.println();
+		System.out.println("LexiconTest.test_shift> AT THE END");
+		System.out.println("LexiconTest.test_shift> ints:" + ints);
+		System.out.println("LexiconTest.test_shift> Shifting...");
+		ints.shift(10, 3, -1);
+		System.out.println("LexiconTest.test_shift> ints:" + ints);
+		
+		for (int i = 0; i < 10; i++)
+			Assertions.assertEquals(i, ints.get(i).intValue());
+		
+		for (int i = 10; i <= 12; i++)
+			Assertions.assertEquals(-1, ints.get(i).intValue());
+		
+		Assertions.assertEquals(10, ints.last().intValue());
+		
+		/* WHEN GAP >= size() */
+		setup();
+		System.out.println();
+		System.out.println("LexiconTest.test_shift> WHEN GAP >= size()");
+		System.out.println("LexiconTest.test_shift> ints:" + ints);
+		System.out.println("LexiconTest.test_shift> Shifting...");
+		ints.shift(4, 20, null);
+		System.out.println("LexiconTest.test_shift> ints:" + ints);
+		
+		for (int i = 0; i < 4; i++)
+			Assertions.assertEquals(i, ints.get(i).intValue());
+		
+		for (int i = 4; i <= 23; i++)
+			Assertions.assertNull(ints.get(i));
+		
+		for (int i = 24; i < ints.size(); i++)
+			Assertions.assertEquals(i - 20, ints.get(i).intValue());
+		
+		/* CANNOT SHIFT AT THE END OF LEXICON */
+		setup();
+		System.out.println();
+		System.out.println("LexiconTest.test_shift> CANNOT SHIFT AT THE END OF LEXICON");
+		try {
+			ints.shift(ints.size(), 3, -1);
+			Assertions.fail("Should have failed...");
+		} catch (IndexOutOfBoundsException ignored) {
+			System.out.println("Has successfully failed!");
+		}
+	}
+	
+	@Test
+	void test_insert() {
+		/* IN THE MIDDLE */
+		System.out.println("LexiconTest.test_insert> IN THE MIDDLE");
+		System.out.println("LexiconTest.test_insert> ints:" + ints);
+		System.out.println("LexiconTest.test_insert> Inserting...");
+		ints.insertAll(4, -1, -1, -1);
+		System.out.println("LexiconTest.test_insert> ints:" + ints);
+		
+		for (int i = 0; i < 4; i++)
+			Assertions.assertEquals(i, ints.get(i).intValue());
+		
+		for (int i = 4; i <= 6; i++)
+			Assertions.assertEquals(-1, ints.get(i).intValue());
+		
+		for (int i = 7; i < ints.size(); i++)
+			Assertions.assertEquals(i - 3, ints.get(i).intValue());
+		
+		/* AT THE BEGINNING */
+		setup();
+		System.out.println();
+		System.out.println("LexiconTest.test_insert> AT THE BEGINNING");
+		System.out.println("LexiconTest.test_insert> ints:" + ints);
+		System.out.println("LexiconTest.test_insert> Inserting...");
+		ints.insertAll(0, -1, -1, -1);
+		System.out.println("LexiconTest.test_insert> ints:" + ints);
+		
+		for (int i = 0; i <= 2; i++)
+			Assertions.assertEquals(-1, ints.get(i).intValue());
+		
+		for (int i = 3; i < ints.size(); i++)
+			Assertions.assertEquals(i - 3, ints.get(i).intValue());
+		
+		/* AT THE END */
+		setup();
+		System.out.println();
+		System.out.println("LexiconTest.test_insert> AT THE END");
+		System.out.println("LexiconTest.test_insert> ints:" + ints);
+		System.out.println("LexiconTest.test_insert> Inserting...");
+		ints.insertAll(10, -1, -1, -1);
+		System.out.println("LexiconTest.test_insert> ints:" + ints);
+		
+		for (int i = 0; i < 10; i++)
+			Assertions.assertEquals(i, ints.get(i).intValue());
+		
+		for (int i = 10; i <= 12; i++)
+			Assertions.assertEquals(-1, ints.get(i).intValue());
+		
+		Assertions.assertEquals(10, ints.last().intValue());
+		
+		/* WHEN GAP >= size() */
+		setup();
+		System.out.println();
+		System.out.println("LexiconTest.test_insert> WHEN GAP >= size()");
+		System.out.println("LexiconTest.test_insert> ints:" + ints);
+		System.out.println("LexiconTest.test_insert> Inserting...");
+		ints.insertAll(4, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+		System.out.println("LexiconTest.test_insert> ints:" + ints);
+		
+		for (int i = 0; i < 4; i++)
+			Assertions.assertEquals(i, ints.get(i).intValue());
+		
+		for (int i = 4; i <= 23; i++)
+			Assertions.assertNull(ints.get(i));
+		
+		for (int i = 24; i < ints.size(); i++)
+			Assertions.assertEquals(i - 20, ints.get(i).intValue());
+		
+		/* CANNOT INSERT AT THE END OF LEXICON */
+		setup();
+		System.out.println();
+		System.out.println("LexiconTest.test_insert> CANNOT INSERT AT THE END OF LEXICON");
+		try {
+			ints.insertAll(ints.size(), -1, -1, -1);
+			Assertions.fail("Should have failed...");
+		} catch (IndexOutOfBoundsException ignored) {
+			System.out.println("Has successfully failed!");
+		}
+	}
+	
+	@Test
 	void test_handlers() {
 		ints.addAddHandler(new AddHandler<Integer>() {
 			@Override
