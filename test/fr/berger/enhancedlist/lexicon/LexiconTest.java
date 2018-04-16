@@ -141,6 +141,69 @@ class LexiconTest implements Observer {
 	}
 	
 	@Test
+	void test_gettingRandomElements() {
+		int limit = 100;
+		int a = ints.first(0), b = ints.last(10);
+		int element;
+		
+		for (int i = 0; i < limit; i++) {
+			element = ints.getRandom();
+			Assertions.assertTrue(a <= element && element <= b);
+		}
+		
+		for (int i = 0; i < limit; i++) {
+			element = ints.getRandom(a, b);
+			Assertions.assertTrue(a <= element && element <= b);
+		}
+		
+		a = 5;
+		for (int i = 0; i < limit; i++) {
+			element = ints.getRandom(a, b);
+			Assertions.assertTrue(a <= element && element <= b);
+		}
+		
+		a = ints.first(0);
+		b = 8;
+		for (int i = 0; i < limit; i++) {
+			element = ints.getRandom(a, b);
+			Assertions.assertTrue(a <= element && element <= b);
+		}
+		
+		a = 5;
+		b = 8;
+		for (int i = 0; i < limit; i++) {
+			element = ints.getRandom(a, b);
+			Assertions.assertTrue(a <= element && element <= b);
+		}
+		
+		a = ints.first(0);
+		b = ints.last(10);
+		for (int i = 0; i < limit; i++) {
+			element = ints.getRandomFrom(a);
+			Assertions.assertTrue(a <= element && element <= b);
+		}
+		
+		a = 5;
+		for (int i = 0; i < limit; i++) {
+			element = ints.getRandomFrom(a);
+			Assertions.assertTrue(a <= element && element <= b);
+		}
+		
+		a = ints.first(0);
+		b = ints.last(10);
+		for (int i = 0; i < limit; i++) {
+			element = ints.getRandomTo(b);
+			Assertions.assertTrue(a <= element && element <= b);
+		}
+		
+		b = 8;
+		for (int i = 0; i < limit; i++) {
+			element = ints.getRandomTo(b);
+			Assertions.assertTrue(a <= element && element <= b);
+		}
+	}
+	
+	@Test
 	void test_autoSetClass() {
 		/* Test with class */
 		Lexicon<Float> floats = new Lexicon<>();
