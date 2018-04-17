@@ -25,7 +25,7 @@ class LexiconBuilderTest {
 		hasObserved = false;
 	}
 	
-	//@SuppressWarnings("unchecked")
+	@SuppressWarnings("unchecked")
 	@Test
 	void test() {
 		Lexicon<Integer> lexicon = intsBuilder
@@ -37,8 +37,9 @@ class LexiconBuilderTest {
 				.addSetHandlers((index, element) -> setHandler = true)
 				.addRemoveHandlers((index, element) -> removeHandler = true)
 				.addObserver((observable, o) -> hasObserved = true)
-				.addAll(0, 1, 2, 4, 3, 5, 6, 7)
+				.addAll(0, 1, 2, 4, 3, 7)
 				.swap(3, 4)
+				.insertAll(5, 5, 6)
 				.add(8)
 				.setOrAdd(9, 9)
 				.setOrAdd(-1, 10)

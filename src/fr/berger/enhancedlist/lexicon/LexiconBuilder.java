@@ -113,6 +113,34 @@ public class LexiconBuilder<T> implements Serializable, Cloneable {
 	}
 	
 	@NotNull
+	public LexiconBuilder<T> shift(int startIndex, int shift, @Nullable T valueInTheGap) {
+		lexicon.shift(startIndex, shift, valueInTheGap);
+		return this;
+	}
+	
+	@NotNull
+	public LexiconBuilder<T> insertAll(int index, @NotNull Lexicon<T> elements) {
+		lexicon.insertAll(index, elements);
+		return this;
+	}
+	@NotNull
+	public LexiconBuilder<T> insertAll(int index, @NotNull Collection<T> elements) {
+		lexicon.insertAll(index, elements);
+		return this;
+	}
+	@NotNull
+	public LexiconBuilder<T> insertAll(int index, @Nullable T... elements) {
+		lexicon.insertAll(index, elements);
+		return this;
+	}
+	
+	@NotNull
+	public LexiconBuilder<T> insert(int index, @Nullable T element) {
+		lexicon.insert(index, element);
+		return this;
+	}
+	
+	@NotNull
 	public LexiconBuilder<T> addAddHandlers(@NotNull AddHandler<T> addHandler) {
 		lexicon.addAddHandler(addHandler);
 		return this;

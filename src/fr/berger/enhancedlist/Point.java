@@ -1,5 +1,10 @@
 package fr.berger.enhancedlist;
 
+import org.jetbrains.annotations.NotNull;
+
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -8,15 +13,8 @@ import java.util.Objects;
  * @author Valentin Berger
  * @see Couple
  */
-public class Point extends Couple<Integer, Integer> implements Serializable {
+public class Point extends Couple<Integer, Integer> implements Serializable, Cloneable {
 	
-	/**
-	 * Default constructor. Set {@code x} and {@code y} with 0
-	 */
-	public Point() {
-		setX(0);
-		setY(0);
-	}
 	/**
 	 * Set {@code x} and {@code y} with the given values
 	 * @param x The value of x
@@ -26,8 +24,28 @@ public class Point extends Couple<Integer, Integer> implements Serializable {
 		setX(x);
 		setY(y);
 	}
+	/**
+	 * Default constructor. Set {@code x} and {@code y} with 0
+	 */
+	public Point() {
+		this(0, 0);
+	}
+	
+	/* SERIALIZATION METHODS */
+	
+	private void writeObject(@NotNull ObjectOutputStream stream) throws IOException {
+		stream.writeObject(getX());
+		stream.writeObject(getY());
+	}
+	
+	@SuppressWarnings("unchecked")
+	private void readObject(@NotNull ObjectInputStream stream) throws IOException, ClassNotFoundException {
+		setX((Integer) stream.readObject());
+		setY((Integer) stream.readObject());
+	}
 	
 	/* OVERRIDES */
+	
 	@Override
 	public String toString() {
 		return "(" + (getX() != null ? getX().toString() : "(null)") +

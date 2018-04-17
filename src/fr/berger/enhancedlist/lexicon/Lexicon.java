@@ -11,7 +11,6 @@ import fr.berger.enhancedlist.lexicon.eventhandlers.RemoveHandler;
 import fr.berger.enhancedlist.lexicon.eventhandlers.SetHandler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -36,7 +35,7 @@ import java.util.function.*;
  * @author Valentin Berger
  */
 @SuppressWarnings("ConstantConditions")
-public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Serializable, Cloneable {
+public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Iterable<T>, Serializable, Cloneable {
 	
 	private static final long serialVersionUID = -8760304915380000309L;
 	
@@ -821,7 +820,7 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 	 * @param i The index where the insertion will be.
 	 * @param elements The elements to insert.
 	 */
-	public void insertAll(int i, @Nullable Lexicon<T> elements) {
+	public void insertAll(int i, @NotNull Lexicon<T> elements) {
 		if (isSynchronizedAccess()) {
 			synchronized (this) {
 				insertAll_content(i, elements);
@@ -845,7 +844,7 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ser
 	 * @param i The index where the insertion will be.
 	 * @param elements The elements to insert.
 	 */
-	public void insertAll(int i, @Nullable Collection<T> elements) {
+	public void insertAll(int i, @NotNull Collection<T> elements) {
 		insertAll(i, new Lexicon<>(elements));
 	}
 	/**
