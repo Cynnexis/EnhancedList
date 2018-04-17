@@ -34,7 +34,7 @@ import java.util.function.*;
  * @param <T> The type of the object to save in the Lexicon instance
  * @author Valentin Berger
  */
-@SuppressWarnings("ConstantConditions")
+@SuppressWarnings({"ConstantConditions", "NullableProblems"})
 public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Iterable<T>, Serializable, Cloneable {
 	
 	private static final long serialVersionUID = -8760304915380000309L;
@@ -43,20 +43,20 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ite
 	private T[] array;
 	
 	@NotNull
-	private ArrayList<AddHandler<T>> addHandlers = new ArrayList<>();
+	private ArrayList<AddHandler<T>> addHandlers;
 	@NotNull
-	private ArrayList<GetHandler<T>> getHandlers = new ArrayList<>();
+	private ArrayList<GetHandler<T>> getHandlers;
 	@NotNull
-	private ArrayList<SetHandler<T>> setHandlers = new ArrayList<>();
+	private ArrayList<SetHandler<T>> setHandlers;
 	@NotNull
-	private ArrayList<RemoveHandler<T>> removeHandlers = new ArrayList<>();
+	private ArrayList<RemoveHandler<T>> removeHandlers;
 	@Nullable
 	private Class<T> clazz;
-	private boolean acceptDuplicates = true;
-	private boolean acceptNullValues = true;
-	private boolean synchronizedAccess = false;
+	private boolean acceptDuplicates;
+	private boolean acceptNullValues;
+	private boolean synchronizedAccess;
 	
-	private int actualSize = 0;
+	private int actualSize;
 	
 	// TODO: Implement a way to make this list persistent (aka: survive after the program exit)
 	
@@ -74,8 +74,8 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ite
 	@SuppressWarnings({"WeakerAccess", "unused"})
 	public Lexicon(@NotNull Class<T> clazz, int initialCapacity) {
 		setClazz(clazz);
-		growCapacity(initialCapacity);
 		initialize();
+		growCapacity(initialCapacity);
 	}
 	@SuppressWarnings({"WeakerAccess", "unused"})
 	public Lexicon(@NotNull Class<T> clazz) {
@@ -84,8 +84,8 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ite
 	}
 	@SuppressWarnings({"WeakerAccess", "unused"})
 	public <U extends T> Lexicon(@Nullable U element) {
-		add(element);
 		initialize();
+		add(element);
 	}
 	@SuppressWarnings({"WeakerAccess", "unchecked"})
 	public Lexicon(@Nullable Collection<? extends T> elements) {
@@ -106,12 +106,13 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ite
 	@SafeVarargs
 	@SuppressWarnings({"WeakerAccess", "unused"})
 	public <U extends T> Lexicon(@Nullable U... elements) {
-		addAll(elements);
 		initialize();
+		addAll(elements);
 	}
 	
 	@SuppressWarnings("WeakerAccess")
 	protected void initialize() {
+		this.actualSize = 0;
 		setAddHandlers(new ArrayList<>());
 		setGetHandlers(new ArrayList<>());
 		setSetHandlers(new ArrayList<>());
