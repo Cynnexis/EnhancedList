@@ -22,5 +22,6 @@
     </orderEntry>
     <orderEntry type="library" name="JetBrains Annotations" level="project" />
     <orderEntry type="library" name="BeyondCode" level="project" />
+    <orderEntry type="library" name="Arrow" level="project" />
   </component>
 </module>
