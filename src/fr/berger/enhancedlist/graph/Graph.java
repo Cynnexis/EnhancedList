@@ -12,6 +12,7 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.Serializable;
 import java.util.LinkedHashMap;
+import java.util.Objects;
 import java.util.function.Function;
 
 public class Graph<T, U> extends EnhancedObservable implements Serializable, Cloneable {
@@ -26,34 +27,21 @@ public class Graph<T, U> extends EnhancedObservable implements Serializable, Clo
 	
 	/* GRAPH METHODS */
 	
-	@SuppressWarnings("ConstantConditions")
-	public boolean areAdjacent(@NotNull Vertex<T> v1, @NotNull Vertex<T> v2) {
-		if (v1 == null || v2 == null)
-			throw new NullPointerException();
-		
-		throw new NotImplementedException();
-	}
-	@SuppressWarnings("ConstantConditions")
-	public boolean areAdjacent(@NotNull Ref<Vertex<T>> v1, @NotNull Ref<Vertex<T>> v2) {
-		if (v1 == null || v2 == null)
-			throw new NullPointerException();
-		
-		return areAdjacent(v1.getElement(), v2.getElement());
-	}
-	@SuppressWarnings("ConstantConditions")
-	public boolean areAdjacent(@NotNull Edge<U> e1, @NotNull Edge<U> e2) {
-		if (e1 == null || e2 == null)
-			throw new NullPointerException();
-		
-		throw new NotImplementedException();
-	}
-	
-	@SuppressWarnings("ConstantConditions")
+	@SuppressWarnings({"ConstantConditions", "unchecked"})
 	public Lexicon<Vertex<T>> getSuccessors(@NotNull Vertex<T> vertex) {
 		if (vertex == null)
 			throw new NullPointerException();
 		
-		throw new NotImplementedException();
+		Lexicon<Vertex<T>> vertices = new LexiconBuilder<Vertex<T>>()
+				.setAcceptNullValues(false)
+				.createLexicon();
+		
+		for (Edge<U> edge : getEdges())
+			if (edge.getLink() != null && edge.getLink().getX() != null)
+				if (Objects.equals(vertex, edge.getLink().getX().getElement()))
+					vertices.add((Vertex<T>) edge.getLink().getY().getElement());
+		
+		return vertices;
 	}
 	@SuppressWarnings("ConstantConditions")
 	public Lexicon<Vertex<T>> getSuccessors(@NotNull Ref<Vertex<T>> vertex) {
@@ -68,7 +56,16 @@ public class Graph<T, U> extends EnhancedObservable implements Serializable, Clo
 		if (vertex == null)
 			throw new NullPointerException();
 		
-		throw new NotImplementedException();
+		Lexicon<Vertex<T>> vertices = new LexiconBuilder<Vertex<T>>()
+				.setAcceptNullValues(false)
+				.createLexicon();
+		
+		for (Edge<U> edge : getEdges())
+			if (edge.getLink() != null && edge.getLink().getY() != null)
+				if (Objects.equals(vertex, edge.getLink().getY().getElement()))
+					vertices.add((Vertex<T>) edge.getLink().getX().getElement());
+		
+		return vertices;
 	}
 	@SuppressWarnings("ConstantConditions")
 	public Lexicon<Vertex<T>> getPredecessors(@NotNull Ref<Vertex<T>> vertex) {
@@ -78,11 +75,30 @@ public class Graph<T, U> extends EnhancedObservable implements Serializable, Clo
 		return getPredecessors(vertex.getElement());
 	}
 	
+	@NotNull
 	public Lexicon<Vertex<T>> getSources() {
-		throw new NotImplementedException();
+		Lexicon<Vertex<T>> vertices = new LexiconBuilder<Vertex<T>>()
+				.setAcceptNullValues(false)
+				.createLexicon();
+		
+		for (Vertex<T> vertex : getVertices())
+			if (getPredecessors(vertex).size() == 0)
+				vertices.add(vertex);
+		
+		return vertices;
 	}
+	
+	@NotNull
 	public Lexicon<Vertex<T>> getSinks() {
-		throw new NotImplementedException();
+		Lexicon<Vertex<T>> vertices = new LexiconBuilder<Vertex<T>>()
+				.setAcceptNullValues(false)
+				.createLexicon();
+		
+		for (Vertex<T> vertex : getVertices())
+			if (getSuccessors(vertex).size() == 0)
+				vertices.add(vertex);
+		
+		return vertices;
 	}
 	
 	@SuppressWarnings("ConstantConditions")
@@ -128,6 +144,28 @@ public class Graph<T, U> extends EnhancedObservable implements Serializable, Clo
 			throw new NullPointerException();
 		
 		return getDegree(vertex.getElement());
+	}
+	
+	@SuppressWarnings("ConstantConditions")
+	public boolean areAdjacent(@NotNull Vertex<T> v1, @NotNull Vertex<T> v2) {
+		if (v1 == null || v2 == null)
+			throw new NullPointerException();
+		
+		throw new NotImplementedException();
+	}
+	@SuppressWarnings("ConstantConditions")
+	public boolean areAdjacent(@NotNull Ref<Vertex<T>> v1, @NotNull Ref<Vertex<T>> v2) {
+		if (v1 == null || v2 == null)
+			throw new NullPointerException();
+		
+		return areAdjacent(v1.getElement(), v2.getElement());
+	}
+	@SuppressWarnings("ConstantConditions")
+	public boolean areAdjacent(@NotNull Edge<U> e1, @NotNull Edge<U> e2) {
+		if (e1 == null || e2 == null)
+			throw new NullPointerException();
+		
+		throw new NotImplementedException();
 	}
 	
 	public boolean isSymmetrical() {
