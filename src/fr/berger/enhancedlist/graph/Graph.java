@@ -60,9 +60,8 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 				.createLexicon();
 		
 		for (Edge<E> edge : getEdges())
-			if (edge.getLink() != null && edge.getLink().getX() != null)
-				if (Objects.equals(vertex, edge.getLink().getX().getElement()))
-					vertices.add((Vertex<V>) edge.getLink().getY().getElement());
+			if (Objects.equals(vertex, edge.getX()))
+				vertices.add((Vertex<V>) edge.getY());
 		
 		return vertices;
 	}
@@ -83,11 +82,12 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 				.setAcceptNullValues(false)
 				.createLexicon();
 		
-		for (Edge<E> edge : getEdges())
-			if (edge.getLink() != null && edge.getLink().getY() != null)
-				if (Objects.equals(vertex, edge.getLink().getY().getElement()))
-					//noinspection unchecked
-					vertices.add((Vertex<V>) edge.getLink().getX().getElement());
+		for (Edge<E> edge : getEdges()) {
+			if (Objects.equals(vertex, edge.getY())) {
+				//noinspection unchecked
+				vertices.add((Vertex<V>) edge.getX());
+			}
+		}
 		
 		return vertices;
 	}
@@ -177,11 +177,11 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 		
 		boolean adjacent = false;
 		for (int i = 0, maxi = getEdges().size(); i < maxi && !adjacent; i++) {
-			if (getEdges().get(i) != null && getEdges().get(i).getLink() != null && getEdges().get(i).getLink().getX() != null) {
-				if ((Objects.equals(getEdges().get(i).getLink().getX().getElement(), v1) &&
-						Objects.equals(getEdges().get(i).getLink().getY().getElement(), v2)) ||
-						(Objects.equals(getEdges().get(i).getLink().getY().getElement(), v1) &&
-								Objects.equals(getEdges().get(i).getLink().getX().getElement(), v2)))
+			if (getEdges().get(i) != null && getEdges().get(i).getX() != null) {
+				if ((Objects.equals(getEdges().get(i).getX(), v1) &&
+						Objects.equals(getEdges().get(i).getY(), v2)) ||
+						(Objects.equals(getEdges().get(i).getY(), v1) &&
+								Objects.equals(getEdges().get(i).getX(), v2)))
 					adjacent = true;
 			}
 		}
@@ -200,17 +200,10 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 		if (e1 == null || e2 == null)
 			throw new NullPointerException();
 		
-		if (e1.getLink() == null || e2.getLink() == null)
-			return false;
-		
-		if (e1.getLink().getX() == null || e1.getLink().getY() == null ||
-				e2.getLink().getX() == null || e2.getLink().getY() == null)
-			return false;
-		
-		return Objects.equals(e1.getLink().getX().getElement(), e2.getLink().getX().getElement()) ||
-				Objects.equals(e1.getLink().getX().getElement(), e2.getLink().getY().getElement()) ||
-				Objects.equals(e1.getLink().getY().getElement(), e2.getLink().getX().getElement()) ||
-				Objects.equals(e1.getLink().getY().getElement(), e2.getLink().getY().getElement());
+		return Objects.equals(e1.getX(), e2.getX()) ||
+				Objects.equals(e1.getX(), e2.getY()) ||
+				Objects.equals(e1.getY(), e2.getX()) ||
+				Objects.equals(e1.getY(), e2.getY());
 	}
 	
 	public boolean isSymmetrical() {
@@ -528,18 +521,15 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 			if (edge != null) {
 				builder.append("\tEdge{");
 				
-				if (edge.getLink() != null &&
-						edge.getLink().getX() != null && edge.getLink().getX().getElement() != null &&
-						edge.getLink().getY() != null && edge.getLink().getY().getElement() != null) {
-					
-					builder.append(edge.getLink().getX().getElement().getLabel())
+				if (edge.getX() != null && edge.getY() != null) {
+					builder.append(edge.getX().getLabel())
 							.append(' ');
 					
 					if (!isOriented())
 						builder.append('<');
 					
 					builder.append("-> ")
-							.append(edge.getLink().getY().getElement().getLabel())
+							.append(edge.getY().getLabel())
 							.append(" (id=\"")
 							.append(edge.getId());
 					

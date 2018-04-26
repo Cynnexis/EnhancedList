@@ -13,51 +13,39 @@ import java.io.Serializable;
 import java.util.Objects;
 import java.util.UUID;
 
-public class Edge<T> extends EnhancedObservable implements Serializable, Cloneable {
+public class Edge<T> extends Couple<Vertex<?>, Vertex<?>> implements Serializable, Cloneable {
 	
 	@NotNull
 	private UUID id;
 	@Nullable
 	private T data;
-	@NotNull
-	private Couple<Ref<Vertex<?>>, Ref<Vertex<?>>> link;
 	
 	/* CONSTRUCTORS */
 	
-	public Edge(@NotNull UUID id, @Nullable T data, @NotNull Couple<Ref<Vertex<?>>, Ref<Vertex<?>>> link) {
+	public Edge(@NotNull UUID id, @Nullable T data, @NotNull Vertex<?> x, @NotNull Vertex<?> y) {
+		super(x, y);
 		setId(id);
 		setData(data);
-		setLink(link);
 	}
-	public Edge(@Nullable T data, @NotNull Couple<Ref<Vertex<?>>, Ref<Vertex<?>>> link) {
+	public Edge(@Nullable T data, @NotNull Vertex<?> x, @NotNull Vertex<?> y) {
+		super(x, y);
 		initData();
 		setData(data);
-		setLink(link);
 	}
-	public Edge(@NotNull Couple<Ref<Vertex<?>>, Ref<Vertex<?>>> link) {
+	public Edge(@NotNull Vertex<?> x, @NotNull Vertex<?> y) {
+		super(x, y);
 		initData();
 		initData();
-		setLink(link);
-	}
-	public Edge(@NotNull Ref<Vertex<?>> r1, Ref<Vertex<?>> r2) {
-		initData();
-		initData();
-		setLink(new Couple<>(r1, r2));
-	}
-	public Edge(@NotNull Vertex<?> v1, Vertex<?> v2) {
-		initData();
-		initData();
-		setLink(new Couple<>(new Ref<>(v1), new Ref<>(v2)));
 	}
 	public Edge(@Nullable T data) {
+		super();
 		initData();
 		setData(data);
-		initLink();
 	}
 	public Edge() {
+		super();
 		initId();
 		initData();
-		initLink();
 	}
 	
 	/* EDGE METHODS */
@@ -100,41 +88,21 @@ public class Edge<T> extends EnhancedObservable implements Serializable, Cloneab
 		setData(null);
 	}
 	
-	@SuppressWarnings("ConstantConditions")
-	@NotNull
-	public Couple<Ref<Vertex<?>>, Ref<Vertex<?>>> getLink() {
-		if (link == null)
-			initLink();
-		
-		return link;
-	}
-	
-	@SuppressWarnings("ConstantConditions")
-	public void setLink(@NotNull Couple<Ref<Vertex<?>>, Ref<Vertex<?>>> link) {
-		if (link == null)
-			throw new NullPointerException();
-		
-		this.link = link;
-		snap(this.link);
-	}
-	
-	protected void initLink() {
-		setLink(new Couple<>(null, null));
-	}
-	
 	/* SERIALIZATION OVERRIDES */
 	
 	private void writeObject(@NotNull ObjectOutputStream stream) throws IOException {
 		stream.writeObject(getId());
 		stream.writeObject(getData());
-		stream.writeObject(getLink());
+		stream.writeObject(getX());
+		stream.writeObject(getY());
 	}
 	
 	@SuppressWarnings("unchecked")
 	private void readObject(@NotNull ObjectInputStream stream) throws IOException, ClassNotFoundException {
 		setId((UUID) stream.readObject());
 		setData((T) stream.readObject());
-		setLink((Couple<Ref<Vertex<?>>, Ref<Vertex<?>>>) stream.readObject());
+		setX((Vertex<?>) stream.readObject());
+		setY((Vertex<?>) stream.readObject());
 	}
 	
 	/* OVERRIDES */
@@ -143,23 +111,26 @@ public class Edge<T> extends EnhancedObservable implements Serializable, Cloneab
 	public boolean equals(Object o) {
 		if (this == o) return true;
 		if (!(o instanceof Edge)) return false;
+		if (!super.equals(o)) return false;
 		Edge<?> edge = (Edge<?>) o;
 		return Objects.equals(getId(), edge.getId()) &&
 				Objects.equals(getData(), edge.getData()) &&
-				Objects.equals(getLink(), edge.getLink());
+				Objects.equals(getX(), edge.getX()) &&
+				Objects.equals(getY(), edge.getY());
 	}
 	
 	@Override
 	public int hashCode() {
-		return Objects.hash(getId(), getData(), getLink());
+		return Objects.hash(super.hashCode(), getId(), getData());
 	}
 	
 	@Override
 	public String toString() {
 		return "Edge{" +
 				"id=" + id +
+				", x=" + getX() +
+				", y=" + getY() +
 				", data=" + data +
-				", link=" + link +
 				'}';
 	}
 }
