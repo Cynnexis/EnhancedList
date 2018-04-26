@@ -210,8 +210,6 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 		if (!isOriented())
 			return true;
 		
-		throw new NotImplementedException();
-		/*
 		boolean symmetrical = true;
 		
 		for (int i = 0, maxi = getEdges().size(); i < maxi && symmetrical; i++) {
@@ -223,21 +221,43 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 			for (int j = 0, maxj = getEdges().size(); j < maxj && !found; j++) {
 				Edge e = getEdges().get(j);
 				if (!Objects.equals(edge, e)) {
-					if (e.getLink() != null)
+					found = Objects.equals(e.getX(), edge.getY()) &&
+							Objects.equals(e.getY(), edge.getX());
 				}
 			}
 			
 			if (!found)
 				symmetrical = false;
 		}
-		*/
+		
+		return symmetrical;
 	}
 	
 	public boolean isAntisymmetric() {
 		if (!isOriented())
 			return true;
 		
-		throw new NotImplementedException();
+		boolean antisymmetrical = true;
+		
+		for (int i = 0, maxi = getEdges().size(); i < maxi && antisymmetrical; i++) {
+			Edge edge = getEdges().get(i);
+			// "edge" = (i, j)
+			
+			// Search for an edge "e" such that "e" = (j, i)
+			boolean found = false;
+			for (int j = 0, maxj = getEdges().size(); j < maxj && !found; j++) {
+				Edge e = getEdges().get(j);
+				if (!Objects.equals(edge, e)) {
+					found = Objects.equals(e.getX(), edge.getY()) &&
+							Objects.equals(e.getY(), edge.getX());
+				}
+			}
+			
+			if (found)
+				antisymmetrical = false;
+		}
+		
+		return antisymmetrical;
 	}
 	
 	public boolean isTransitive() {

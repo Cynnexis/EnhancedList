@@ -191,4 +191,54 @@ class GraphTest {
 		assertFalse(g1.areAdjacent(e16, e17));
 		assertFalse(g1.areAdjacent(e17, e16));
 	}
+	
+	@Test
+	void test_isSymmetrical() {
+		Vertex<Object> vs1 = new VertexBuilder<>()
+				.setLabel(1)
+				.createVertex();
+		Vertex<Object> vs2 = new VertexBuilder<>()
+				.setLabel(2)
+				.createVertex();
+		Vertex<Object> vs3 = new VertexBuilder<>()
+				.setLabel(3)
+				.createVertex();
+		Vertex<Object> vs4 = new VertexBuilder<>()
+				.setLabel(4)
+				.createVertex();
+		Vertex<Object> vs5 = new VertexBuilder<>()
+				.setLabel(5)
+				.createVertex();
+		
+		Edge<Object> es1 = new Edge<>(vs1, vs2);
+		Edge<Object> es2 = new Edge<>(vs2, vs1);
+		
+		Edge<Object> es3 = new Edge<>(vs2, vs3);
+		Edge<Object> es4 = new Edge<>(vs3, vs2);
+		
+		Edge<Object> es5 = new Edge<>(vs2, vs4);
+		Edge<Object> es6 = new Edge<>(vs4, vs2);
+		
+		Edge<Object> es7 = new Edge<>(vs4, vs5);
+		Edge<Object> es8 = new Edge<>(vs5, vs4);
+		
+		Graph<Object, Object> gSym = new Graph<>(true, new Lexicon<>(
+				vs1, vs2, vs3, vs4, vs5
+		), new Lexicon<>(
+				es1, es2, es3, es4, es5, es6, es7, es8
+		));
+		
+		assertTrue(gSym.isSymmetrical());
+		assertFalse(gSym.isAntisymmetric());
+		
+		
+		Graph<Object, Object> gAntiSym = new Graph<>(true, new Lexicon<>(
+				vs1, vs2, vs3, vs4, vs5
+		), new Lexicon<>(
+				es1, es3, es5, es7
+		));
+		
+		assertTrue(gAntiSym.isAntisymmetric());
+		assertFalse(gAntiSym.isSymmetrical());
+	}
 }
