@@ -63,6 +63,25 @@ class LexiconTest implements Observer {
 	}
 	
 	@Test
+	void test_equals() {
+		Assertions.assertEquals(new Lexicon<Integer>(
+				0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+		), ints);
+		
+		Assertions.assertEquals(new Lexicon<String>(
+				"Hello world!", "This is a test..."
+		), new Lexicon<String>(
+				"Hello world!", "This is a test..."
+		));
+		
+		Assertions.assertNotEquals(new Lexicon<String>(
+				"Hello world!", "This is a test..."
+		), new Lexicon<String>(
+				"Hello world!", "This is a test...", "Hello again!"
+		));
+	}
+	
+	@Test
 	void test_gettingElements() {
 		/* Test normal gets */
 		for (int i = 0; i < ints.size(); i++) {

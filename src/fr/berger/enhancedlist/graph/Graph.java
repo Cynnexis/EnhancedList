@@ -10,41 +10,64 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.util.LinkedHashMap;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Function;
 
-public class Graph<T, U> extends EnhancedObservable implements Serializable, Cloneable {
+@SuppressWarnings("NullableProblems")
+public class Graph<V, E> extends EnhancedObservable implements Serializable, Cloneable {
 	
 	private boolean oriented;
 	@NotNull
-	private Lexicon<Vertex<T>> vertices;
+	private Lexicon<Vertex<V>> vertices;
 	@NotNull
-	private Lexicon<Edge<U>> edges;
+	private Lexicon<Edge<E>> edges;
 	
 	/* CONSTRUCTORS */
+	
+	public Graph(boolean oriented, @NotNull Collection<Vertex<V>> vertices, @NotNull Collection<Edge<E>> edges) {
+		setOriented(oriented);
+		setVertices(new Lexicon<>(vertices));
+		setEdges(new Lexicon<>(edges));
+	}
+	@SuppressWarnings("ConstantConditions")
+	public Graph(@NotNull Graph<V, E> graph) {
+		if (graph == null)
+			throw new NullPointerException();
+		
+		setOriented(graph.isOriented());
+		setVertices(graph.getVertices());
+		setEdges(graph.getEdges());
+	}
+	public Graph() {
+		initOriented();
+		initVertices();
+		initEdges();
+	}
 	
 	/* GRAPH METHODS */
 	
 	@SuppressWarnings({"ConstantConditions", "unchecked"})
-	public Lexicon<Vertex<T>> getSuccessors(@NotNull Vertex<T> vertex) {
+	public Lexicon<Vertex<V>> getSuccessors(@NotNull Vertex<V> vertex) {
 		if (vertex == null)
 			throw new NullPointerException();
 		
-		Lexicon<Vertex<T>> vertices = new LexiconBuilder<Vertex<T>>()
+		Lexicon<Vertex<V>> vertices = new LexiconBuilder<Vertex<V>>()
 				.setAcceptNullValues(false)
 				.createLexicon();
 		
-		for (Edge<U> edge : getEdges())
+		for (Edge<E> edge : getEdges())
 			if (edge.getLink() != null && edge.getLink().getX() != null)
 				if (Objects.equals(vertex, edge.getLink().getX().getElement()))
-					vertices.add((Vertex<T>) edge.getLink().getY().getElement());
+					vertices.add((Vertex<V>) edge.getLink().getY().getElement());
 		
 		return vertices;
 	}
 	@SuppressWarnings("ConstantConditions")
-	public Lexicon<Vertex<T>> getSuccessors(@NotNull Ref<Vertex<T>> vertex) {
+	public Lexicon<Vertex<V>> getSuccessors(@NotNull Ref<Vertex<V>> vertex) {
 		if (vertex == null)
 			throw new NullPointerException();
 		
@@ -52,23 +75,24 @@ public class Graph<T, U> extends EnhancedObservable implements Serializable, Clo
 	}
 	
 	@SuppressWarnings("ConstantConditions")
-	public Lexicon<Vertex<T>> getPredecessors(@NotNull Vertex<T> vertex) {
+	public Lexicon<Vertex<V>> getPredecessors(@NotNull Vertex<V> vertex) {
 		if (vertex == null)
 			throw new NullPointerException();
 		
-		Lexicon<Vertex<T>> vertices = new LexiconBuilder<Vertex<T>>()
+		Lexicon<Vertex<V>> vertices = new LexiconBuilder<Vertex<V>>()
 				.setAcceptNullValues(false)
 				.createLexicon();
 		
-		for (Edge<U> edge : getEdges())
+		for (Edge<E> edge : getEdges())
 			if (edge.getLink() != null && edge.getLink().getY() != null)
 				if (Objects.equals(vertex, edge.getLink().getY().getElement()))
-					vertices.add((Vertex<T>) edge.getLink().getX().getElement());
+					//noinspection unchecked
+					vertices.add((Vertex<V>) edge.getLink().getX().getElement());
 		
 		return vertices;
 	}
 	@SuppressWarnings("ConstantConditions")
-	public Lexicon<Vertex<T>> getPredecessors(@NotNull Ref<Vertex<T>> vertex) {
+	public Lexicon<Vertex<V>> getPredecessors(@NotNull Ref<Vertex<V>> vertex) {
 		if (vertex == null)
 			throw new NullPointerException();
 		
@@ -76,12 +100,12 @@ public class Graph<T, U> extends EnhancedObservable implements Serializable, Clo
 	}
 	
 	@NotNull
-	public Lexicon<Vertex<T>> getSources() {
-		Lexicon<Vertex<T>> vertices = new LexiconBuilder<Vertex<T>>()
+	public Lexicon<Vertex<V>> getSources() {
+		Lexicon<Vertex<V>> vertices = new LexiconBuilder<Vertex<V>>()
 				.setAcceptNullValues(false)
 				.createLexicon();
 		
-		for (Vertex<T> vertex : getVertices())
+		for (Vertex<V> vertex : getVertices())
 			if (getPredecessors(vertex).size() == 0)
 				vertices.add(vertex);
 		
@@ -89,12 +113,12 @@ public class Graph<T, U> extends EnhancedObservable implements Serializable, Clo
 	}
 	
 	@NotNull
-	public Lexicon<Vertex<T>> getSinks() {
-		Lexicon<Vertex<T>> vertices = new LexiconBuilder<Vertex<T>>()
+	public Lexicon<Vertex<V>> getSinks() {
+		Lexicon<Vertex<V>> vertices = new LexiconBuilder<Vertex<V>>()
 				.setAcceptNullValues(false)
 				.createLexicon();
 		
-		for (Vertex<T> vertex : getVertices())
+		for (Vertex<V> vertex : getVertices())
 			if (getSuccessors(vertex).size() == 0)
 				vertices.add(vertex);
 		
@@ -102,14 +126,14 @@ public class Graph<T, U> extends EnhancedObservable implements Serializable, Clo
 	}
 	
 	@SuppressWarnings("ConstantConditions")
-	public int getInDegree(@NotNull Vertex<T> vertex) {
+	public int getInDegree(@NotNull Vertex<V> vertex) {
 		if (vertex == null)
 			throw new NullPointerException();
 		
-		throw new NotImplementedException();
+		return getPredecessors(vertex).size();
 	}
 	@SuppressWarnings("ConstantConditions")
-	public int getInDegree(@NotNull Ref<Vertex<T>> vertex) {
+	public int getInDegree(@NotNull Ref<Vertex<V>> vertex) {
 		if (vertex == null)
 			throw new NullPointerException();
 		
@@ -117,14 +141,14 @@ public class Graph<T, U> extends EnhancedObservable implements Serializable, Clo
 	}
 	
 	@SuppressWarnings("ConstantConditions")
-	public int getOutDegree(@NotNull Vertex<T> vertex) {
+	public int getOutDegree(@NotNull Vertex<V> vertex) {
 		if (vertex == null)
 			throw new NullPointerException();
 		
-		throw new NotImplementedException();
+		return getSuccessors(vertex).size();
 	}
 	@SuppressWarnings("ConstantConditions")
-	public int getOutDegree(@NotNull Ref<Vertex<T>> vertex) {
+	public int getOutDegree(@NotNull Ref<Vertex<V>> vertex) {
 		if (vertex == null)
 			throw new NullPointerException();
 		
@@ -132,14 +156,14 @@ public class Graph<T, U> extends EnhancedObservable implements Serializable, Clo
 	}
 	
 	@SuppressWarnings("ConstantConditions")
-	public int getDegree(@NotNull Vertex<T> vertex) {
+	public int getDegree(@NotNull Vertex<V> vertex) {
 		if (vertex == null)
 			throw new NullPointerException();
 		
 		return getInDegree(vertex) + getOutDegree(vertex);
 	}
 	@SuppressWarnings("ConstantConditions")
-	public int getDegree(@NotNull Ref<Vertex<T>> vertex) {
+	public int getDegree(@NotNull Ref<Vertex<V>> vertex) {
 		if (vertex == null)
 			throw new NullPointerException();
 		
@@ -147,32 +171,79 @@ public class Graph<T, U> extends EnhancedObservable implements Serializable, Clo
 	}
 	
 	@SuppressWarnings("ConstantConditions")
-	public boolean areAdjacent(@NotNull Vertex<T> v1, @NotNull Vertex<T> v2) {
+	public boolean areAdjacent(@NotNull Vertex<V> v1, @NotNull Vertex<V> v2) {
 		if (v1 == null || v2 == null)
 			throw new NullPointerException();
 		
-		throw new NotImplementedException();
+		boolean adjacent = false;
+		for (int i = 0, maxi = getEdges().size(); i < maxi && !adjacent; i++) {
+			if (getEdges().get(i) != null && getEdges().get(i).getLink() != null && getEdges().get(i).getLink().getX() != null) {
+				if ((Objects.equals(getEdges().get(i).getLink().getX().getElement(), v1) &&
+						Objects.equals(getEdges().get(i).getLink().getY().getElement(), v2)) ||
+						(Objects.equals(getEdges().get(i).getLink().getY().getElement(), v1) &&
+								Objects.equals(getEdges().get(i).getLink().getX().getElement(), v2)))
+					adjacent = true;
+			}
+		}
+		
+		return adjacent;
 	}
 	@SuppressWarnings("ConstantConditions")
-	public boolean areAdjacent(@NotNull Ref<Vertex<T>> v1, @NotNull Ref<Vertex<T>> v2) {
+	public boolean areAdjacent(@NotNull Ref<Vertex<V>> v1, @NotNull Ref<Vertex<V>> v2) {
 		if (v1 == null || v2 == null)
 			throw new NullPointerException();
 		
 		return areAdjacent(v1.getElement(), v2.getElement());
 	}
 	@SuppressWarnings("ConstantConditions")
-	public boolean areAdjacent(@NotNull Edge<U> e1, @NotNull Edge<U> e2) {
+	public boolean areAdjacent(@NotNull Edge<E> e1, @NotNull Edge<E> e2) {
 		if (e1 == null || e2 == null)
 			throw new NullPointerException();
 		
-		throw new NotImplementedException();
+		if (e1.getLink() == null || e2.getLink() == null)
+			return false;
+		
+		if (e1.getLink().getX() == null || e1.getLink().getY() == null ||
+				e2.getLink().getX() == null || e2.getLink().getY() == null)
+			return false;
+		
+		return Objects.equals(e1.getLink().getX().getElement(), e2.getLink().getX().getElement()) ||
+				Objects.equals(e1.getLink().getX().getElement(), e2.getLink().getY().getElement()) ||
+				Objects.equals(e1.getLink().getY().getElement(), e2.getLink().getX().getElement()) ||
+				Objects.equals(e1.getLink().getY().getElement(), e2.getLink().getY().getElement());
 	}
 	
 	public boolean isSymmetrical() {
+		if (!isOriented())
+			return true;
+		
 		throw new NotImplementedException();
+		/*
+		boolean symmetrical = true;
+		
+		for (int i = 0, maxi = getEdges().size(); i < maxi && symmetrical; i++) {
+			Edge edge = getEdges().get(i);
+			// "edge" = (i, j)
+			
+			// Search for an edge "e" such that "e" = (j, i)
+			boolean found = false;
+			for (int j = 0, maxj = getEdges().size(); j < maxj && !found; j++) {
+				Edge e = getEdges().get(j);
+				if (!Objects.equals(edge, e)) {
+					if (e.getLink() != null)
+				}
+			}
+			
+			if (!found)
+				symmetrical = false;
+		}
+		*/
 	}
 	
 	public boolean isAntisymmetric() {
+		if (!isOriented())
+			return true;
+		
 		throw new NotImplementedException();
 	}
 	
@@ -200,15 +271,15 @@ public class Graph<T, U> extends EnhancedObservable implements Serializable, Clo
 		return !isConnected();
 	}
 	
-	public Graph<T, U> getSymmetry() {
+	public Graph<V, E> getSymmetry() {
 		throw new NotImplementedException();
 	}
 	
-	public Lexicon<Vertex<T>> getArticulationPoints() {
+	public Lexicon<Vertex<V>> getArticulationPoints() {
 		throw new NotImplementedException();
 	}
 	
-	public Lexicon<Edge<U>> getBridges() {
+	public Lexicon<Edge<E>> getBridges() {
 		throw new NotImplementedException();
 	}
 	
@@ -218,16 +289,16 @@ public class Graph<T, U> extends EnhancedObservable implements Serializable, Clo
 	
 	// ALGORITHMS
 	
-	public LinkedHashMap<Vertex<T>, Integer> breadthFirstSearch(@NotNull Vertex<T> beginning, @Nullable Function<Couple<Vertex<T>, Integer>, Void> action) {
-		LinkedHashMap<Vertex<T>, Integer> route = new LinkedHashMap<>();
-		LinkedHashMap<Vertex<T>, Boolean> mark = new LinkedHashMap<>();
-		Lexicon<Vertex<T>> F = new LexiconBuilder<Vertex<T>>()
+	public LinkedHashMap<Vertex<V>, Integer> breadthFirstSearch(@NotNull Vertex<V> beginning, @Nullable Function<Couple<Vertex<V>, Integer>, Void> action) {
+		LinkedHashMap<Vertex<V>, Integer> route = new LinkedHashMap<>();
+		LinkedHashMap<Vertex<V>, Boolean> mark = new LinkedHashMap<>();
+		Lexicon<Vertex<V>> F = new LexiconBuilder<Vertex<V>>()
 			.setAcceptNullValues(false)
 			.setAcceptDuplicates(false)
 			.createLexicon();
 		int p = 1;
 		
-		for (Vertex<T> v : getVertices()) {
+		for (Vertex<V> v : getVertices()) {
 			mark.put(v, false);
 			route.put(v, 0);
 		}
@@ -236,11 +307,11 @@ public class Graph<T, U> extends EnhancedObservable implements Serializable, Clo
 		F.add(beginning);
 		
 		while (!F.isEmpty()) {
-			Vertex<T> x = F.first();
+			Vertex<V> x = F.first();
 			
 			if (x != null) {
-				Lexicon<Vertex<T>> successors = getSuccessors(x);
-				for (Vertex<T> y : successors) {
+				Lexicon<Vertex<V>> successors = getSuccessors(x);
+				for (Vertex<V> y : successors) {
 					if (!mark.getOrDefault(y, false)) {
 						mark.put(y, true);
 						F.add(y);
@@ -260,16 +331,16 @@ public class Graph<T, U> extends EnhancedObservable implements Serializable, Clo
 		return route;
 	}
 	
-	public LinkedHashMap<Vertex<T>, Integer> depthFirstSearch(@NotNull Vertex<T> beginning, @Nullable Function<Couple<Vertex<T>, Integer>, Void> action) {
-		LinkedHashMap<Vertex<T>, Integer> route = new LinkedHashMap<>();
-		LinkedHashMap<Vertex<T>, Boolean> mark = new LinkedHashMap<>();
-		Lexicon<Vertex<T>> P = new LexiconBuilder<Vertex<T>>()
+	public LinkedHashMap<Vertex<V>, Integer> depthFirstSearch(@NotNull Vertex<V> beginning, @Nullable Function<Couple<Vertex<V>, Integer>, Void> action) {
+		LinkedHashMap<Vertex<V>, Integer> route = new LinkedHashMap<>();
+		LinkedHashMap<Vertex<V>, Boolean> mark = new LinkedHashMap<>();
+		Lexicon<Vertex<V>> P = new LexiconBuilder<Vertex<V>>()
 				.setAcceptNullValues(false)
 				.setAcceptDuplicates(false)
 				.createLexicon();
 		int p = 1;
 		
-		for (Vertex<T> v : getVertices()) {
+		for (Vertex<V> v : getVertices()) {
 			mark.put(v, false);
 			route.put(v, 0);
 		}
@@ -278,11 +349,11 @@ public class Graph<T, U> extends EnhancedObservable implements Serializable, Clo
 		P.add(beginning);
 		
 		while (!P.isEmpty()) {
-			Vertex<T> x = P.last();
+			Vertex<V> x = P.last();
 			
 			if (x != null) {
-				Lexicon<Vertex<T>> successors = getSuccessors(x);
-				for (Vertex<T> y : successors) {
+				Lexicon<Vertex<V>> successors = getSuccessors(x);
+				for (Vertex<V> y : successors) {
 					if (!mark.getOrDefault(y, false)) {
 						mark.put(y, true);
 						P.add(y);
@@ -312,27 +383,177 @@ public class Graph<T, U> extends EnhancedObservable implements Serializable, Clo
 		this.oriented = oriented;
 	}
 	
-	public Lexicon<Vertex<T>> getVertices() {
+	protected void initOriented() {
+		setOriented(false);
+	}
+	
+	@SuppressWarnings("ConstantConditions")
+	@NotNull
+	public Lexicon<Vertex<V>> getVertices() {
+		if (vertices == null)
+			initVertices();
+		
 		return vertices;
 	}
 	
-	public void setVertices(Lexicon<Vertex<T>> vertices) {
+	@SuppressWarnings("ConstantConditions")
+	public void setVertices(@NotNull Lexicon<Vertex<V>> vertices) {
+		if (vertices == null)
+			throw new NullPointerException();
+		
 		this.vertices = vertices;
+		configureVertices();
+	}
+	
+	protected void initVertices() {
+		setVertices(new Lexicon<>());
+	}
+	
+	protected void configureVertices() {
+		getVertices().setAcceptNullValues(false);
+		getVertices().setAcceptDuplicates(false);
+		getVertices().addObserver((observable, o) -> snap(o));
+		snap(getVertices());
 	}
 	
 	public int getN() {
 		return getVertices().size();
 	}
 	
-	public Lexicon<Edge<U>> getEdges() {
+	@SuppressWarnings("ConstantConditions")
+	@NotNull
+	public Lexicon<Edge<E>> getEdges() {
+		if (edges == null)
+			initEdges();
+		
 		return edges;
 	}
 	
-	public void setEdges(Lexicon<Edge<U>> edges) {
+	@SuppressWarnings("ConstantConditions")
+	public void setEdges(@NotNull Lexicon<Edge<E>> edges) {
+		if (edges == null)
+			throw new NullPointerException();
+		
 		this.edges = edges;
+		configureEdges();
+	}
+	
+	protected void initEdges() {
+		setEdges(new Lexicon<>());
+	}
+	
+	protected void configureEdges() {
+		getEdges().setAcceptNullValues(false);
+		getEdges().setAcceptDuplicates(false);
+		getEdges().addObserver((observable, o) -> snap(o));
+		snap(getEdges());
 	}
 	
 	public int getM() {
 		return getEdges().size();
+	}
+	
+	/* SERIALIZATION OVERRIDES */
+	
+	private void writeObject(@NotNull ObjectOutputStream stream) throws IOException {
+		stream.writeBoolean(isOriented());
+		stream.writeObject(getVertices());
+		stream.writeObject(getEdges());
+	}
+	
+	@SuppressWarnings("unchecked")
+	private void readObject(@NotNull ObjectInputStream stream) throws IOException, ClassNotFoundException {
+		setOriented(stream.readBoolean());
+		setVertices((Lexicon<Vertex<V>>) stream.readObject());
+		setEdges((Lexicon<Edge<E>>) stream.readObject());
+	}
+	
+	/* OVERRIDES */
+	
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof Graph)) return false;
+		Graph<?, ?> graph = (Graph<?, ?>) o;
+		return isOriented() == graph.isOriented() &&
+				Objects.equals(getVertices(), graph.getVertices()) &&
+				Objects.equals(getEdges(), graph.getEdges());
+	}
+	
+	@Override
+	public int hashCode() {
+		return Objects.hash(isOriented(), getVertices(), getEdges());
+	}
+	
+	@Override
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		
+		builder.append("Graph\n");
+		
+		// Vertices
+		builder.append(" --- ");
+		if (getVertices().size() <= 1)
+			builder.append("Vertex");
+		else
+			builder.append("Vertices");
+		builder.append(" ---\n");
+		
+		for (Vertex<V> vertex : getVertices()) {
+			if (vertex != null) {
+				builder.append("\tVertex{")
+						.append("label=\"")
+						.append(vertex.getLabel())
+						.append("\", id=\"")
+						.append(vertex.getId())
+						.append("\"");
+				
+				if (vertex.getData() != null) {
+					builder.append(", data=\"")
+							.append(vertex.getData())
+							.append("\"");
+				}
+				
+				builder.append("}\n");
+			}
+		}
+		
+		// Edge
+		builder.append(" --- Edge");
+		if (getVertices().size() > 1)
+			builder.append("s");
+		builder.append(" ---\n");
+		
+		for (Edge<E> edge : getEdges()) {
+			if (edge != null) {
+				builder.append("\tEdge{");
+				
+				if (edge.getLink() != null &&
+						edge.getLink().getX() != null && edge.getLink().getX().getElement() != null &&
+						edge.getLink().getY() != null && edge.getLink().getY().getElement() != null) {
+					
+					builder.append(edge.getLink().getX().getElement().getLabel())
+							.append(' ');
+					
+					if (!isOriented())
+						builder.append('<');
+					
+					builder.append("-> ")
+							.append(edge.getLink().getY().getElement().getLabel())
+							.append(" (id=\"")
+							.append(edge.getId());
+					
+					if (edge.getData() != null) {
+						builder.append("\", data=\"")
+								.append(edge.getData());
+					}
+					builder.append("\")");
+				}
+				
+				builder.append("}\n");
+			}
+		}
+		
+		return builder.toString();
 	}
 }

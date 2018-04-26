@@ -99,7 +99,8 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ite
 			setAcceptDuplicates(list.isAcceptDuplicates());
 			setAcceptNullValues(list.isAcceptNullValues());
 			setSynchronizedAccess(list.isSynchronizedAccess());
-			setClazz(list.getClazz());
+			if (list.getClazz() != null)
+				setClazz(list.getClazz());
 		}
 		addAll(elements);
 	}
@@ -1598,5 +1599,29 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ite
 	@SuppressWarnings("WeakerAccess")
 	public void setSynchronizedAccess(boolean synchronizedAccess) {
 		this.synchronizedAccess = synchronizedAccess;
+	}
+	
+	/* OVERRIDES */
+	
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof Lexicon)) return false;
+		Lexicon<?> that = (Lexicon<?>) o;
+		
+		if (this.size() != that.size())
+			return false;
+		
+		boolean identical = true;
+		for (int i = 0, size = this.size(); i < size && identical; i++)
+			if (!Objects.equals(this.get(i), that.get(i)))
+				identical = false;
+		
+		return identical;
+	}
+	
+	@Override
+	public int hashCode() {
+		return Arrays.hashCode(array);
 	}
 }

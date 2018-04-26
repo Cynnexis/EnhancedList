@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.Objects;
 import java.util.UUID;
 
 public class Edge<T> extends EnhancedObservable implements Serializable, Cloneable {
@@ -37,6 +38,16 @@ public class Edge<T> extends EnhancedObservable implements Serializable, Cloneab
 		initData();
 		initData();
 		setLink(link);
+	}
+	public Edge(@NotNull Ref<Vertex<?>> r1, Ref<Vertex<?>> r2) {
+		initData();
+		initData();
+		setLink(new Couple<>(r1, r2));
+	}
+	public Edge(@NotNull Vertex<?> v1, Vertex<?> v2) {
+		initData();
+		initData();
+		setLink(new Couple<>(new Ref<>(v1), new Ref<>(v2)));
 	}
 	public Edge(@Nullable T data) {
 		initData();
@@ -124,5 +135,31 @@ public class Edge<T> extends EnhancedObservable implements Serializable, Cloneab
 		setId((UUID) stream.readObject());
 		setData((T) stream.readObject());
 		setLink((Couple<Ref<Vertex<?>>, Ref<Vertex<?>>>) stream.readObject());
+	}
+	
+	/* OVERRIDES */
+	
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof Edge)) return false;
+		Edge<?> edge = (Edge<?>) o;
+		return Objects.equals(getId(), edge.getId()) &&
+				Objects.equals(getData(), edge.getData()) &&
+				Objects.equals(getLink(), edge.getLink());
+	}
+	
+	@Override
+	public int hashCode() {
+		return Objects.hash(getId(), getData(), getLink());
+	}
+	
+	@Override
+	public String toString() {
+		return "Edge{" +
+				"id=" + id +
+				", data=" + data +
+				", link=" + link +
+				'}';
 	}
 }

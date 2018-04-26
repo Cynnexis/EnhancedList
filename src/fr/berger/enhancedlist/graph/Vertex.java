@@ -211,7 +211,6 @@ public class Vertex<T> extends EnhancedObservable implements Serializable, Clone
 				"id=" + id +
 				", data=" + data +
 				", label='" + label + '\'' +
-				", successors=" + successors +
 				'}';
 	}
 }
