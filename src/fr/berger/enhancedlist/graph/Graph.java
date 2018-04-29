@@ -3,6 +3,7 @@ package fr.berger.enhancedlist.graph;
 import fr.berger.arrow.Ref;
 import fr.berger.beyondcode.util.EnhancedObservable;
 import fr.berger.enhancedlist.Couple;
+import fr.berger.enhancedlist.algorithm.Dijkstra;
 import fr.berger.enhancedlist.lexicon.Lexicon;
 import fr.berger.enhancedlist.lexicon.LexiconBuilder;
 import fr.berger.enhancedlist.matrix.Matrix;
@@ -16,6 +17,8 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.*;
 import java.util.function.Function;
+
+import static fr.berger.enhancedlist.algorithm.Dijkstra.getPath;
 
 @SuppressWarnings("NullableProblems")
 public class Graph<V, E> extends EnhancedObservable implements Serializable, Cloneable {
@@ -74,6 +77,9 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 		if (vertex == null)
 			throw new NullPointerException();
 		
+		if (!getVertices().contains(vertex))
+			throw new IllegalArgumentException();
+		
 		Lexicon<Vertex<V>> vertices = new LexiconBuilder<Vertex<V>>()
 				.setAcceptNullValues(false)
 				.createLexicon();
@@ -105,6 +111,9 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	public Lexicon<Vertex<V>> getPredecessors(@NotNull Vertex<V> vertex) {
 		if (vertex == null)
 			throw new NullPointerException();
+		
+		if (!getVertices().contains(vertex))
+			throw new IllegalArgumentException();
 		
 		Lexicon<Vertex<V>> vertices = new LexiconBuilder<Vertex<V>>()
 				.setAcceptNullValues(false)
@@ -237,6 +246,9 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 		if (v1 == null || v2 == null)
 			throw new NullPointerException();
 		
+		if (!getVertices().contains(v1) || !getVertices().contains(v2))
+			throw new IllegalArgumentException();
+		
 		boolean adjacent = false;
 		for (int i = 0, maxi = getEdges().size(); i < maxi && !adjacent; i++) {
 			if (getEdges().get(i) != null && getEdges().get(i).getX() != null) {
@@ -267,6 +279,9 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	public boolean areAdjacent(@NotNull Edge<E> e1, @NotNull Edge<E> e2) {
 		if (e1 == null || e2 == null)
 			throw new NullPointerException();
+		
+		if (!getEdges().contains(e1) || !getEdges().contains(e2))
+			throw new IllegalArgumentException();
 		
 		return Objects.equals(e1.getX(), e2.getX()) ||
 				Objects.equals(e1.getX(), e2.getY()) ||
@@ -457,17 +472,6 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	}
 	
 	/**
-	 * Compute a walk between {@code v1} and {@code v2}.
-	 * @param v1 The vertex where the walk begins.
-	 * @param v2 The vertex where the walk ends.
-	 * @return A walk between {@code v1} and {@code v2}.
-	 */
-	// TODO: NOT TESTED
-	public Walk<E> getWalk(@NotNull Vertex<V> v1, @NotNull Vertex<V> v2) {
-		throw new NotImplementedException();
-	}
-	
-	/**
 	 * Tell if the graph is connected.
 	 * @return Return {@code true} if the graph is connected, {@code false} otherwise.
 	 */
@@ -517,11 +521,93 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	 * @return The matrix.
 	 */
 	// TODO: NOT TESTED
-	public Matrix<Integer> getMatrix() {
+	public Matrix<Integer> toMatrix() {
+		throw new NotImplementedException();
+	}
+	
+	// TODO: NOT TESTED
+	public static <V, E> Graph<V, E> fromMatrix(Matrix<Integer> matrix) {
 		throw new NotImplementedException();
 	}
 	
 	// ALGORITHMS
+	
+	/**
+	 * Compute a walk between {@code source} and {@code destination}.
+	 * @param source The vertex where the walk begins.
+	 * @param destination The vertex where the walk ends.
+	 * @return A walk between {@code source} and {@code destination}.
+	 */
+	// TODO: NOT TESTED
+	@SuppressWarnings("ConstantConditions")
+	public Path<E> getWalk(@NotNull Vertex<V> source, @NotNull Vertex<V> destination) {
+		if (source == null || destination == null)
+			throw new NullPointerException();
+		
+		if (!getVertices().contains(source) || !getVertices().contains(destination))
+			throw new IllegalArgumentException();
+		
+		Lexicon<Vertex<V>> vertices = Dijkstra.getPath(this, source, destination);
+		return Path.constructPathFromVertices(this, vertices);
+	}
+	
+	// TODO: NOT TESTED
+	@SuppressWarnings("ConstantConditions")
+	@NotNull
+	public LinkedHashMap<Vertex<V>, Integer> mapDistanceFrom(@NotNull Vertex<V> source) {
+		if (source == null)
+			throw new NullPointerException();
+		
+		if (!getVertices().contains(source))
+			throw new IllegalArgumentException();
+		
+		LinkedHashMap<Vertex<V>, Boolean> mark = new LinkedHashMap<>();
+		LinkedHashMap<Vertex<V>, Integer> distance = new LinkedHashMap<>();
+		Lexicon<Vertex<V>> F = new Lexicon<>();
+		
+		for (Vertex<V> x : getVertices()) {
+			mark.put(x, false);
+			distance.put(x, Integer.MAX_VALUE);
+		}
+		
+		mark.put(source, true);
+		F.add(source);
+		distance.put(source, 0);
+		
+		while (!F.isEmpty()) {
+			Vertex<V> x = F.first();
+			
+			if (x != null) {
+				Lexicon<Vertex<V>> successors = getSuccessors(x);
+				for (Vertex<V> y : successors) {
+					if (!mark.getOrDefault(y, false)) {
+						mark.put(y, true);
+						distance.put(y, distance.getOrDefault(x, 0) + 1);
+						F.add(y);
+					}
+				}
+				
+				F.remove(x);
+			}
+			
+		}
+		
+		return distance;
+	}
+	
+	// TODO: NOT TESTED
+	@SuppressWarnings("ConstantConditions")
+	public int getShortestDistanceBetween(@NotNull Vertex<V> source, @NotNull Vertex<V> destination) {
+		if (source == null || destination == null)
+			throw new NullPointerException();
+		
+		if (!getVertices().contains(source) || !getVertices().contains(destination))
+			throw new IllegalArgumentException();
+		
+		LinkedHashMap<Vertex<V>, Integer> distance = mapDistanceFrom(source);
+		
+		return distance.getOrDefault(destination, Integer.MAX_VALUE);
+	}
 	
 	// TODO: NOT TESTED
 	public LinkedHashMap<Vertex<V>, Integer> breadthFirstSearch(@NotNull Vertex<V> beginning, @Nullable Function<Couple<Vertex<V>, Integer>, Void> action) {

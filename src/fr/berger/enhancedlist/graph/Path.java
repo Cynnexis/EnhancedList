@@ -1,7 +1,9 @@
 package fr.berger.enhancedlist.graph;
 
 import fr.berger.enhancedlist.lexicon.Lexicon;
+import org.intellij.lang.annotations.JdkConstants;
 import org.jetbrains.annotations.NotNull;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -15,7 +17,7 @@ import java.util.Objects;
  * @see Edge
  * @author Valentin Berger
  */
-public abstract class Path<T> extends Lexicon<Edge<T>> implements Serializable, Cloneable {
+public class Path<T> extends Lexicon<Edge<T>> implements Serializable, Cloneable {
 	
 	public Path(@NotNull Collection<Edge<T>> edges) {
 		super(edges);
@@ -33,6 +35,44 @@ public abstract class Path<T> extends Lexicon<Edge<T>> implements Serializable, 
 	public Path() {
 		super();
 		configureLexicon();
+	}
+	
+	@SuppressWarnings("ConstantConditions")
+	@NotNull
+	public static <V, E> Path<E> constructPathFromVertices(@NotNull Graph<V, E> graph, @NotNull Lexicon<Vertex<V>> vertices) {
+		if (graph == null || vertices == null)
+			throw new NullPointerException();
+		
+		Path<E> path = new Path<>();
+		
+		for (int i = 0, maxi = vertices.size(); i < maxi - 1; i++) {
+			Vertex<V> v = vertices.get(i);
+			
+			// Fetch the next vertex.
+			Vertex<V> next = vertices.get(i + 1);
+			
+			// Search the edge
+			Edge<E> edge = null;
+			for (int j = 0, maxj = graph.getEdges().size(); j < maxj && edge == null; j++) {
+				Edge<E> currentEdge = graph.getEdges().get(j);
+				if (Objects.equals(currentEdge.getX(), v) && Objects.equals(currentEdge.getY(), next) ||
+						(!graph.isOriented() && Objects.equals(currentEdge.getY(), v) && Objects.equals(currentEdge.getX(), next)))
+					edge = currentEdge;
+			}
+			
+			// If the edge has not been found, throw an exception because of the argument "vertices"
+			if (edge == null)
+				throw new IllegalArgumentException("No edge beginning with " + v + " and ending with " + next + " in the list of vertices given in argument: " + vertices.toString());
+			
+			// Add the edge to the path
+			path.add(edge);
+		}
+		
+		return path;
+	}
+	@SuppressWarnings("unchecked")
+	public static <V, E> Path constructPathFromVertices(@NotNull Graph<V, E> graph, @NotNull Vertex<V>... vertices) {
+		return constructPathFromVertices(graph, new Lexicon<>(vertices));
 	}
 	
 	/* PATH METHODS */
@@ -86,6 +126,39 @@ public abstract class Path<T> extends Lexicon<Edge<T>> implements Serializable, 
 		this.addAddHandler(this::verifyChangedElement);
 		this.addSetHandler(this::verifyChangedElement);
 		this.addRemoveHandler(this::verifyChangedElement);
+	}
+	
+	public boolean isClosed() {
+		return Objects.equals(first().getX(), last().getY());
+	}
+	
+	public boolean isCycle() {
+		return isClosed();
+	}
+	
+	public boolean isOpen() {
+		return !isClosed();
+	}
+	
+	@SuppressWarnings("Duplicates") // Duplicates from SimplePath.java (deprecated)
+	public boolean areThereDuplicates() {
+		for (int i = 0, maxi = size(); i < maxi; i++) {
+			for (int j = 0, maxj = size(); j < maxj; j++) {
+				if (i != j) {
+					if (Objects.equals(get(i), get(j)))
+						return false;
+					
+					try {
+						if (Objects.equals(get(i).getX(), get(j).getY()))
+							return false;
+					} catch (NullPointerException ignored) {
+						return false;
+					}
+				}
+			}
+		}
+		
+		return true;
 	}
 	
 	/* LEXICON OVERRIDE */

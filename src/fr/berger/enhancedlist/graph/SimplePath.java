@@ -15,6 +15,7 @@ import java.util.Objects;
  * @see Edge
  * @author Valentin Berger
  */
+@Deprecated
 public class SimplePath<T> extends Path<T> implements Serializable, Cloneable {
 	
 	public SimplePath(@NotNull Collection<Edge<T>> edges) {
@@ -40,6 +41,7 @@ public class SimplePath<T> extends Path<T> implements Serializable, Cloneable {
 	 * repetitions).
 	 * @return Return {@code true} if the path is correct, otherwise {@code false}.
 	 */
+	@SuppressWarnings("Duplicates")
 	@Override
 	public boolean checkPath() {
 		boolean superResult = super.checkPath();

@@ -15,6 +15,7 @@ import java.util.Objects;
  * @see Edge
  * @author Valentin Berger
  */
+@Deprecated
 public class Walk<T> extends Path<T> implements Serializable, Cloneable {
 	
 	public Walk(@NotNull Collection<Edge<T>> collection) {
