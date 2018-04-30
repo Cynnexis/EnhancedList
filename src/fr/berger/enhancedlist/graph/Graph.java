@@ -18,8 +18,6 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.function.Function;
 
-import static fr.berger.enhancedlist.algorithm.Dijkstra.getPath;
-
 @SuppressWarnings("NullableProblems")
 public class Graph<V, E> extends EnhancedObservable implements Serializable, Cloneable {
 	
@@ -236,6 +234,32 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	}
 	
 	/**
+	 * Search the edge e such that e = (source, destination) or e = (destination, source) if the graph is not oriented.
+	 * @param source The first vertex.
+	 * @param destination The second Vertex.
+	 * @return Return the edge in the graph e = (source, destination) or e = (destination, source) if the graph is not
+	 * oriented, or {@code null} is the edge has not been found in the graph.
+	 */
+	@SuppressWarnings("ConstantConditions")
+	@Nullable
+	public Edge<E> searchEdge(@NotNull Vertex<?> source, @NotNull Vertex<?> destination) {
+		if (source == null || destination == null)
+			throw new NullPointerException();
+		
+		Edge<E> edge = null;
+		for (int i = 0, maxi = getEdges().size(); i < maxi && edge == null; i++) {
+			Edge<E> e = getEdges().get(i);
+			
+			if (Objects.equals(e.getX(), source) && Objects.equals(e.getY(), destination) || (
+					!isOriented() && Objects.equals(e.getY(), source) && Objects.equals(e.getX(), destination)
+					))
+				edge = e;
+		}
+		
+		return edge;
+	}
+	
+	/**
 	 * Tell if the vertices {@code v1} and {@code v2} are adjacent (there is at least one edge between them).
 	 * @param v1 The first vertex
 	 * @param v2 The second vertex
@@ -300,20 +324,12 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 		boolean symmetrical = true;
 		
 		for (int i = 0, maxi = getEdges().size(); i < maxi && symmetrical; i++) {
-			Edge edge = getEdges().get(i);
+			Edge<E> edge = getEdges().get(i);
 			// "edge" = (i, j)
 			
 			// Search for an edge "e" such that "e" = (j, i)
-			boolean found = false;
-			for (int j = 0, maxj = getEdges().size(); j < maxj && !found; j++) {
-				Edge e = getEdges().get(j);
-				if (!Objects.equals(edge, e)) {
-					found = Objects.equals(e.getX(), edge.getY()) &&
-							Objects.equals(e.getY(), edge.getX());
-				}
-			}
-			
-			if (!found)
+			Edge<E> e = searchEdge(edge.getY(), edge.getX());
+			if (e == null)
 				symmetrical = false;
 		}
 		
@@ -331,20 +347,12 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 		boolean antisymmetric = true;
 		
 		for (int i = 0, maxi = getEdges().size(); i < maxi && antisymmetric; i++) {
-			Edge edge = getEdges().get(i);
+			Edge<E> edge = getEdges().get(i);
 			// "edge" = (i, j)
 			
 			// Search for an edge "e" such that "e" = (j, i)
-			boolean found = false;
-			for (int j = 0, maxj = getEdges().size(); j < maxj && !found; j++) {
-				Edge e = getEdges().get(j);
-				if (!Objects.equals(edge, e)) {
-					found = Objects.equals(e.getX(), edge.getY()) &&
-							Objects.equals(e.getY(), edge.getX());
-				}
-			}
-			
-			if (found)
+			Edge<E> e = searchEdge(edge.getY(), edge.getX());
+			if (e != null)
 				antisymmetric = false;
 		}
 		
@@ -355,34 +363,30 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	 * Tell if the graph is transitive.
 	 * @return Return {@code true} if the graph is transitive, {@code false} otherwise.
 	 */
-	// TODO: NOT TESTED
 	public boolean isTransitive() {
 		if (!isOriented())
 			return true;
 		
 		for (int i = 0, maxi = getEdges().size(); i < maxi; i++) {
-			Edge ei = getEdges().get(i); // (a, b)
+			Edge<E> ei = getEdges().get(i); // (a, b)
+			Vertex<?> a = ei.getX();
+			Vertex<?> b = ei.getY();
 			
+			// Search ej such that ej = (b, c) (c ∈ X (vertices) and c ≠ b)
 			boolean found_ej = false;
 			for (int j = 0, maxj = getEdges().size(); j < maxj; j++) {
 				if (i != j) {
-					Edge ej = getEdges().get(j); // (b, c)
+					Edge<E> ej = getEdges().get(j); // (b, c)
+					Vertex<?> c = ej.getY();
 					
-					if (Objects.equals(ei.getY(), ej.getX())) {
+					if (Objects.equals(ej.getX(), b) && !Objects.equals(ej.getY(), b) || (
+							!isOriented() && Objects.equals(ej.getY(), b) && !Objects.equals(ej.getX(), b)
+							)) {
 						found_ej = true;
 						
-						// Search an edge "ek" such taht "ek" = (a, b)
-						boolean found_ek = false;
-						for (int k = 0, maxk = getEdges().size(); k < maxk && !found_ek; k++) {
-							if (i != k && j != k) {
-								Edge ek = getEdges().get(k);
-								
-								if (Objects.equals(ei.getX(), ek.getX()) && Objects.equals(ej.getY(), ek.getY()))
-									found_ek = true;
-							}
-						}
-						
-						if (!found_ek)
+						// Search an edge "ek" such that "ek" = (a, c)
+						Edge<E> ek = searchEdge(a, c);
+						if (ek == null)
 							return false;
 					}
 				}
@@ -399,7 +403,6 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	 * Tell if the graph is complete.
 	 * @return Return {@code true} if the graph is complete, {@code false} otherwise.
 	 */
-	// TODO: NOT TESTED
 	public boolean isComplete() {
 		for (int i = 0, maxi = getVertices().size(); i < maxi; i++) {
 			for (int j = 0, maxj = getVertices().size(); j < maxj; j++) {
@@ -407,17 +410,14 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 					Vertex<V> vi = getVertices().get(i);
 					Vertex<V> vj = getVertices().get(j);
 					
-					// Search an edge such that ("vi" ; "vj") or ("vj" ; "vi")
-					boolean found_ek = false;
-					for (int k = 0, maxk = getEdges().size(); k < maxk && !found_ek; k++) {
-						Edge<E> ek = getEdges().get(k);
-						if ((Objects.equals(ek.getX(), vi) && Objects.equals(ek.getY(), vj)) ||
-								(Objects.equals(ek.getX(), vj) && Objects.equals(ek.getY(), vi)))
-							found_ek = true;
+					// Search an edge ek such that ek = ("vi" ; "vj") or ek = ("vj" ; "vi")
+					Edge<E> ek = searchEdge(vi, vj);
+					if (ek == null) {
+						ek = searchEdge(vj, vi);
+						
+						if (ek == null)
+							return false;
 					}
-					
-					if (!found_ek)
-						return false;
 				}
 			}
 		}
@@ -429,21 +429,13 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	 * Tell if the graph is reflexive.
 	 * @return Return {@code true} if the graph is reflexive, {@code false} otherwise.
 	 */
-	// TODO: NOT TESTED
 	public boolean isReflexive() {
 		for (int i = 0, maxi = getVertices().size(); i < maxi; i++) {
 			Vertex<V> vi = getVertices().get(i);
 			
-			// Search for an edge ej such that ej = (ei, ei)
-			boolean found_ej = false;
-			for (int j = 0, maxj = getEdges().size(); j < maxj && !found_ej; j++) {
-				Edge<E> ej = getEdges().get(j);
-				
-				if (Objects.equals(ej.getX(), vi) && Objects.equals(ej.getY(), vi))
-					found_ej = true;
-			}
-			
-			if (!found_ej)
+			// Search for an edge ej such that ej = (vi, vi)
+			Edge<E> ej = searchEdge(vi, vi);
+			if (ej == null)
 				return false;
 		}
 		
@@ -459,13 +451,10 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 		for (int i = 0, maxi = getVertices().size(); i < maxi; i++) {
 			Vertex<V> vi = getVertices().get(i);
 			
-			// Search for an edge ej such that ej = (ei, ei)
-			for (int j = 0, maxj = getEdges().size(); j < maxj; j++) {
-				Edge<E> ej = getEdges().get(j);
-				
-				if (Objects.equals(ej.getX(), vi) && Objects.equals(ej.getY(), vi))
-					return false;
-			}
+			// Search for an edge ej such that ej = (vi, vi)
+			Edge<E> ej = searchEdge(vi, vi);
+			if (ej != null)
+				return false;
 		}
 		
 		return true;
@@ -477,6 +466,17 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	 */
 	// TODO: NOT TESTED
 	public boolean isConnected() {
+		for (int i = 0, maxi = getVertices().size(); i < maxi; i++) {
+			Vertex<V> vi = getVertices().get(i);
+			
+			for (int j = 0, maxj = getVertices().size(); j < maxj; j++) {
+				Vertex<V> vj = getVertices().get(i);
+				
+				// Search a path between vi and vj
+				Path<E> path = getPath(vi, vj);
+			}
+		}
+		
 		throw new NotImplementedException();
 	}
 	
@@ -533,14 +533,15 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	// ALGORITHMS
 	
 	/**
-	 * Compute a walk between {@code source} and {@code destination}.
+	 * Compute a path between {@code source} and {@code destination}.
 	 * @param source The vertex where the walk begins.
 	 * @param destination The vertex where the walk ends.
 	 * @return A walk between {@code source} and {@code destination}.
 	 */
 	// TODO: NOT TESTED
 	@SuppressWarnings("ConstantConditions")
-	public Path<E> getWalk(@NotNull Vertex<V> source, @NotNull Vertex<V> destination) {
+	@Nullable
+	public Path<E> getPath(@NotNull Vertex<V> source, @NotNull Vertex<V> destination) {
 		if (source == null || destination == null)
 			throw new NullPointerException();
 		
@@ -548,6 +549,10 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 			throw new IllegalArgumentException();
 		
 		Lexicon<Vertex<V>> vertices = Dijkstra.getPath(this, source, destination);
+		
+		if (vertices == null)
+			return null;
+		
 		return Path.constructPathFromVertices(this, vertices);
 	}
 	

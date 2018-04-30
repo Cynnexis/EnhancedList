@@ -1,10 +1,12 @@
 package fr.berger.enhancedlist.algorithm;
 
 import fr.berger.enhancedlist.Couple;
+import fr.berger.enhancedlist.exceptions.InfiniteLoopException;
 import fr.berger.enhancedlist.graph.Graph;
 import fr.berger.enhancedlist.graph.Vertex;
 import fr.berger.enhancedlist.lexicon.Lexicon;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedHashMap;
 import java.util.Objects;
@@ -36,6 +38,8 @@ public class Dijkstra {
 		if (!graph.getVertices().contains(source))
 			throw new IllegalArgumentException();
 		
+		long limit = (long) (graph.getM() + Math.pow(graph.getN(), 2));
+		long iteration = 0;
 		LinkedHashMap<Vertex<V>, Integer> dist = new LinkedHashMap<>();
 		LinkedHashMap<Vertex<V>, Vertex<V>> prev = new LinkedHashMap<>();
 		Lexicon<Vertex<V>> Q = new Lexicon<>();
@@ -78,6 +82,11 @@ public class Dijkstra {
 					prev.put(v, u);
 				}
 			}
+			
+			iteration++;
+			// If the number of iteration is too big, break the loop by clearing Q.
+			if (iteration >= limit)
+				Q.clear();
 		}
 		
 		return new Couple<>(dist, prev);
@@ -93,6 +102,7 @@ public class Dijkstra {
 	 * @return Return a list of vertex from {@code source} to {@code destination}.
 	 */
 	@SuppressWarnings("ConstantConditions")
+	@Nullable
 	public static <V, E> Lexicon<Vertex<V>> getPath(@NotNull Graph<V, E> graph, @NotNull Vertex<V> source, @NotNull Vertex<V> destination) {
 		if (graph == null || source == null || destination == null)
 			throw new NullPointerException();
@@ -100,6 +110,8 @@ public class Dijkstra {
 		if (!graph.getVertices().contains(source) || !graph.getVertices().contains(destination))
 			throw new IllegalArgumentException();
 		
+		long limit = (long) (graph.getM() + Math.pow(graph.getN(), 2));
+		long iteration = 0;
 		Lexicon<Vertex<V>> vertices = new Lexicon<>();
 		LinkedHashMap<Vertex<V>, Vertex<V>> prev = map(graph, source).getY();
 		
@@ -108,6 +120,11 @@ public class Dijkstra {
 		while (!Objects.equals(x, source)) {
 			vertices.add(x);
 			x = prev.get(x);
+			
+			iteration++;
+			// If the number of iteration is too big, break the loop by returning "null"
+			if (iteration >= limit)
+				return null;
 		}
 		// Adding the source
 		vertices.add(x);
