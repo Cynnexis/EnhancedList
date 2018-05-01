@@ -1,11 +1,18 @@
 package fr.berger.enhancedlist.graph;
 
 import fr.berger.arrow.Ref;
+import fr.berger.enhancedlist.Couple;
+import fr.berger.enhancedlist.algorithm.Dijkstra;
 import fr.berger.enhancedlist.graph.builder.VertexBuilder;
 import fr.berger.enhancedlist.lexicon.Lexicon;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Vector;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -24,6 +31,39 @@ class GraphTest {
 	Edge<Object> e16;
 	Edge<Object> e17;
 	Graph<Object, Object> g1; // See course page 1
+	
+	// g2
+	Vertex<Void> v2a;
+	Vertex<Void> v2b;
+	Vertex<Void> v2c;
+	Vertex<Void> v2d;
+	Vertex<Void> v2e;
+	Vertex<Void> v2f;
+	Vertex<Void> v2g;
+	Vertex<Void> v2h;
+	Vertex<Void> v2i;
+	Vertex<Void> v2j;
+	Vertex<Void> v2k;
+	Vertex<Void> v2l;
+	Edge<Void> e21;
+	Edge<Void> e22;
+	Edge<Void> e23;
+	Edge<Void> e24;
+	Edge<Void> e25;
+	Edge<Void> e26;
+	Edge<Void> e27;
+	Edge<Void> e28;
+	Edge<Void> e29;
+	Edge<Void> e210;
+	Edge<Void> e211;
+	Edge<Void> e212;
+	Edge<Void> e213;
+	Edge<Void> e214;
+	Edge<Void> e215;
+	Edge<Void> e216;
+	Edge<Void> e217;
+	Edge<Void> e218;
+	Graph<Void, Void> g2; // See TD1
 	
 	// gSym
 	Vertex<Object> vs1;
@@ -126,6 +166,43 @@ class GraphTest {
 				v11, v12, v13, v14
 		), new Lexicon<>(
 				e11, e12, e13, e14, e15, e16, e17
+		));
+		
+		// g2
+		v2a = new Vertex<>("a");
+		v2b = new Vertex<>("b");
+		v2c = new Vertex<>("c");
+		v2d = new Vertex<>("d");
+		v2e = new Vertex<>("e");
+		v2f = new Vertex<>("f");
+		v2g = new Vertex<>("g");
+		v2h = new Vertex<>("h");
+		v2i = new Vertex<>("i");
+		v2j = new Vertex<>("j");
+		v2k = new Vertex<>("k");
+		v2l = new Vertex<>("l");
+		e21 = new Edge<>(v2a, v2b);
+		e22 = new Edge<>(v2b, v2c);
+		e23 = new Edge<>(v2c, v2d);
+		e24 = new Edge<>(v2d, v2e);
+		e25 = new Edge<>(v2e, v2f);
+		e26 = new Edge<>(v2f, v2g);
+		e27 = new Edge<>(v2g, v2c);
+		e28 = new Edge<>(v2d, v2f);
+		e29 = new Edge<>(v2a, v2c);
+		e210 = new Edge<>(v2a, v2g);
+		e211 = new Edge<>(v2e, v2l);
+		e212 = new Edge<>(v2a, v2h);
+		e213 = new Edge<>(v2h, v2g);
+		e214 = new Edge<>(v2h, v2e);
+		e215 = new Edge<>(v2k, v2i);
+		e216 = new Edge<>(v2i, v2k);
+		e217 = new Edge<>(v2i, v2j);
+		e218 = new Edge<>(v2k, v2j);
+		g2 = new Graph<>(true, new Lexicon<>(
+				v2a, v2b, v2c, v2d, v2e, v2f, v2g, v2h, v2i, v2j, v2k, v2l
+		), new Lexicon<>(
+				e21, e22, e23, e24, e25, e26, e27, e28, e29, e210, e211, e212, e213, e214, e215, e216, e217, e218
 		));
 		
 		// gSym
@@ -267,6 +344,11 @@ class GraphTest {
 		));
 	}
 	
+	@AfterEach
+	void tearDown() {
+		System.out.println();
+	}
+	
 	@Test
 	void test_getSuccessors() {
 		assertEquals(new Lexicon<>(v12, v13), g1.getSuccessors(v11));
@@ -291,11 +373,13 @@ class GraphTest {
 	@Test
 	void test_getSources() {
 		assertEquals(new Lexicon<>(v11), g1.getSources());
+		assertEquals(new Lexicon<>(v2a), g2.getSources());
 	}
 	
 	@Test
 	void test_getSinks() {
 		assertEquals(new Lexicon<>(), g1.getSinks());
+		assertEquals(new Lexicon<>(v2j, v2l), g2.getSinks());
 	}
 	
 	@Test
@@ -454,6 +538,7 @@ class GraphTest {
 	void test_isReflexive() {
 		assertTrue(gReflexive.isReflexive());
 		assertFalse(g1.isReflexive());
+		assertFalse(g2.isReflexive());
 	}
 	
 	@Test
@@ -464,6 +549,7 @@ class GraphTest {
 		assertTrue(gNotComplete.isAntiReflexive());
 		assertTrue(gTransitive.isAntiReflexive());
 		assertFalse(g1.isAntiReflexive());
+		assertTrue(g2.isAntiReflexive());
 		assertFalse(gReflexive.isAntiReflexive());
 	}
 	
@@ -478,5 +564,100 @@ class GraphTest {
 		assertTrue(gReflexive.isConnected());
 		
 		assertFalse(gNCo.isConnected());
+		assertFalse(g2.isConnected());
+	}
+	
+	// Algorithm
+	
+	@Test
+	void test_mapDistanceFrom() {
+		LinkedHashMap<Vertex<Void>, Long> map = g2.mapDistanceFrom(v2a);
+		
+		try {
+			g2.mapDistanceFrom(vnco1); // vnco1 ∉ g2.V
+			fail("Should have thrown an exception.");
+		} catch (IllegalArgumentException ignored) { }
+		
+		System.out.println("GraphTest.test_mapDistanceFrom> map(g2) = {");
+		for (Map.Entry<Vertex<Void>, Long> entry : map.entrySet())
+			System.out.println("\t" + entry.getKey().getLabel() + " is " +
+					(entry.getValue() != Long.MAX_VALUE ? entry.getValue() : "+∞") + " away from " + v2a.getLabel());
+		
+		System.out.println("}");
+		
+		assertEquals(0, map.get(v2a).longValue());
+		assertEquals(1, map.get(v2b).longValue());
+		assertEquals(1, map.get(v2c).longValue());
+		assertEquals(1, map.get(v2g).longValue());
+		assertEquals(1, map.get(v2h).longValue());
+		assertEquals(2, map.get(v2d).longValue());
+		assertEquals(2, map.get(v2e).longValue());
+		assertEquals(3, map.get(v2f).longValue());
+		assertEquals(3, map.get(v2l).longValue());
+		assertEquals(Long.MAX_VALUE, map.get(v2i).longValue());
+		assertEquals(Long.MAX_VALUE, map.get(v2j).longValue());
+		assertEquals(Long.MAX_VALUE, map.get(v2k).longValue());
+	}
+	
+	@Test
+	void test_getShortestDistanceBetween() {
+		assertEquals(0, g2.getShortestDistanceBetween(v2a, v2a));
+		assertEquals(1, g2.getShortestDistanceBetween(v2a, v2b));
+		assertEquals(1, g2.getShortestDistanceBetween(v2a, v2c));
+		assertEquals(1, g2.getShortestDistanceBetween(v2a, v2g));
+		assertEquals(1, g2.getShortestDistanceBetween(v2a, v2h));
+		assertEquals(2, g2.getShortestDistanceBetween(v2a, v2d));
+		assertEquals(2, g2.getShortestDistanceBetween(v2a, v2e));
+		assertEquals(3, g2.getShortestDistanceBetween(v2a, v2f));
+		assertEquals(3, g2.getShortestDistanceBetween(v2a, v2l));
+		assertEquals(Long.MAX_VALUE, g2.getShortestDistanceBetween(v2a, v2i));
+		assertEquals(Long.MAX_VALUE, g2.getShortestDistanceBetween(v2a, v2j));
+		assertEquals(Long.MAX_VALUE, g2.getShortestDistanceBetween(v2a, v2k));
+		
+		assertEquals(0, g1.getShortestDistanceBetween(v14, v14));
+	}
+	
+	@Test
+	void test_Dijkstra_map() {
+		Couple<LinkedHashMap<Vertex<Void>, Long>, LinkedHashMap<Vertex<Void>, Vertex<Void>>> map = Dijkstra.map(g2, v2a);
+		
+		System.out.println("GraphTest.test_Dijkstra_map> map(g2) = {");
+		for (Vertex<Void> v2 : g2.getVertices()) {
+			Vertex<Void> prev = map.getY().getOrDefault(v2, null);
+			
+			System.out.println("\t" + v2.getLabel() +
+					": dist(a)=" + map.getX().getOrDefault(v2, Long.MAX_VALUE) +
+					" ; prev=" + (prev != null ? prev.getLabel() : "(null)"));
+		}
+		
+		System.out.println("}");
+		
+		assertEquals(Long.MAX_VALUE, map.getX().get(v2i).longValue());
+		assertEquals(Long.MAX_VALUE, map.getX().get(v2j).longValue());
+		assertEquals(Long.MAX_VALUE, map.getX().get(v2k).longValue());
+	}
+	
+	@Test
+	void test_Dijkstra_getPath() {
+		Lexicon<Vertex<Void>> vertices = Dijkstra.getPath(g2, v2a, v2l);
+		
+		System.out.print("GraphTest.test_Dijkstra_getPath> path(g2) = {\n\t");
+		for (Vertex<Void> vertex : vertices)
+			System.out.print(vertex.getLabel() + " -> ");
+		System.out.println("END\n}");
+		
+		assertEquals(new Lexicon<>(
+				v2a, v2h, v2e, v2l
+		), vertices);
+		
+		
+		assertNull(Dijkstra.getPath(g2, v2a, v2i));
+		assertNull(Dijkstra.getPath(g2, v2a, v2j));
+		assertNull(Dijkstra.getPath(g2, v2a, v2k));
+		
+		try {
+			Dijkstra.getPath(g2, v2a, vr1); // vr1 ∉ g2.V
+			fail("Sould have thrown exception.");
+		} catch (IllegalArgumentException ignored) { }
 	}
 }

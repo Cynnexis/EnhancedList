@@ -446,7 +446,6 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	 * Tell if the graph is anti-reflexive.
 	 * @return Return {@code true} if the graph is anti-reflexive, {@code false} otherwise.
 	 */
-	// TODO: NOT TESTED
 	public boolean isAntiReflexive() {
 		for (int i = 0, maxi = getVertices().size(); i < maxi; i++) {
 			Vertex<V> vi = getVertices().get(i);
@@ -464,34 +463,53 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	 * Tell if the graph is connected.
 	 * @return Return {@code true} if the graph is connected, {@code false} otherwise.
 	 */
-	// TODO: NOT TESTED
-	public boolean isConnected() {
-		for (int i = 0, maxi = getVertices().size(); i < maxi; i++) {
+	// TODO: Found another solution without synchornizing the method and changing Graph instance variable
+	public synchronized boolean isConnected() {
+		boolean o = isOriented();
+		boolean connected = true;
+		
+		setOriented(false);
+		for (int i = 0, maxi = getVertices().size(); i < maxi && connected; i++) {
 			Vertex<V> vi = getVertices().get(i);
 			
-			for (int j = 0, maxj = getVertices().size(); j < maxj; j++) {
-				Vertex<V> vj = getVertices().get(i);
+			for (int j = 0, maxj = getVertices().size(); j < maxj && connected; j++) {
 				
-				// Search a path between vi and vj
-				Path<E> path = getPath(vi, vj);
+				if (i != j) {
+					Vertex<V> vj = getVertices().get(j);
+					
+					// Search a path between vi and vj
+					Path<E> path = getPath(vi, vj);
+					
+					if (path == null)
+						connected = false;
+				}
 			}
 		}
 		
-		throw new NotImplementedException();
+		setOriented(o);
+		return connected;
 	}
 	
 	/**
 	 * Tell if the graph is disconnected.
 	 * @return Return {@code true} if the graph is disconnected, {@code false} otherwise.
 	 */
-	// TODO: NOT TESTED
 	public boolean isDisconnected() {
 		return !isConnected();
 	}
 	
 	/**
-	 * Tell if the graph is disconnected.
-	 * @return Return {@code true} if the graph is disconnected, {@code false} otherwise.
+	 * Search every sub-graph in the current graph such that all sub-graphs are connected.
+	 * @return Return the number of connected sub-graphs in the graph. If the graph is connected, return 1.
+	 */
+	// TODO: NOT TESTED
+	public long getConnectivityDegree() {
+		throw new NotImplementedException();
+	}
+	
+	/**
+	 * Construct the symmetry of the current graph.
+	 * @return Return the symmetry of the current graph.
 	 */
 	// TODO: NOT TESTED
 	public Graph<V, E> getSymmetry() {
@@ -522,6 +540,15 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	 */
 	// TODO: NOT TESTED
 	public Matrix<Integer> toMatrix() {
+		Matrix<Integer> matrix = new Matrix<>(getN(), getN(), 0);
+		
+		for (int i = 0, maxi = getVertices().size(); i < maxi; i++) {
+			Vertex<V> vertex = getVertices().get(i);
+			Lexicon<Vertex<V>> successors = getSuccessors(vertex);
+			
+			// TODO: Continue...
+		}
+		
 		throw new NotImplementedException();
 	}
 	
@@ -536,9 +563,8 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	 * Compute a path between {@code source} and {@code destination}.
 	 * @param source The vertex where the walk begins.
 	 * @param destination The vertex where the walk ends.
-	 * @return A walk between {@code source} and {@code destination}.
+	 * @return A path between {@code source} and {@code destination}.
 	 */
-	// TODO: NOT TESTED
 	@SuppressWarnings("ConstantConditions")
 	@Nullable
 	public Path<E> getPath(@NotNull Vertex<V> source, @NotNull Vertex<V> destination) {
@@ -556,10 +582,9 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 		return Path.constructPathFromVertices(this, vertices);
 	}
 	
-	// TODO: NOT TESTED
 	@SuppressWarnings("ConstantConditions")
 	@NotNull
-	public LinkedHashMap<Vertex<V>, Integer> mapDistanceFrom(@NotNull Vertex<V> source) {
+	public LinkedHashMap<Vertex<V>, Long> mapDistanceFrom(@NotNull Vertex<V> source) {
 		if (source == null)
 			throw new NullPointerException();
 		
@@ -567,27 +592,31 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 			throw new IllegalArgumentException();
 		
 		LinkedHashMap<Vertex<V>, Boolean> mark = new LinkedHashMap<>();
-		LinkedHashMap<Vertex<V>, Integer> distance = new LinkedHashMap<>();
+		LinkedHashMap<Vertex<V>, Long> distance = new LinkedHashMap<>();
 		Lexicon<Vertex<V>> F = new Lexicon<>();
 		
 		for (Vertex<V> x : getVertices()) {
 			mark.put(x, false);
-			distance.put(x, Integer.MAX_VALUE);
+			distance.put(x, Long.MAX_VALUE);
 		}
 		
 		mark.put(source, true);
 		F.add(source);
-		distance.put(source, 0);
+		distance.put(source, 0L);
 		
 		while (!F.isEmpty()) {
 			Vertex<V> x = F.first();
 			
 			if (x != null) {
-				Lexicon<Vertex<V>> successors = getSuccessors(x);
-				for (Vertex<V> y : successors) {
+				Lexicon<Vertex<V>> neighbor = getSuccessors(x);
+				
+				if (!isOriented())
+					neighbor.addAll(getPredecessors(x));
+				
+				for (Vertex<V> y : neighbor) {
 					if (!mark.getOrDefault(y, false)) {
 						mark.put(y, true);
-						distance.put(y, distance.getOrDefault(x, 0) + 1);
+						distance.put(y, distance.getOrDefault(x, 0L) + 1);
 						F.add(y);
 					}
 				}
@@ -600,18 +629,17 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 		return distance;
 	}
 	
-	// TODO: NOT TESTED
 	@SuppressWarnings("ConstantConditions")
-	public int getShortestDistanceBetween(@NotNull Vertex<V> source, @NotNull Vertex<V> destination) {
+	public long getShortestDistanceBetween(@NotNull Vertex<V> source, @NotNull Vertex<V> destination) {
 		if (source == null || destination == null)
 			throw new NullPointerException();
 		
 		if (!getVertices().contains(source) || !getVertices().contains(destination))
 			throw new IllegalArgumentException();
 		
-		LinkedHashMap<Vertex<V>, Integer> distance = mapDistanceFrom(source);
+		LinkedHashMap<Vertex<V>, Long> distance = mapDistanceFrom(source);
 		
-		return distance.getOrDefault(destination, Integer.MAX_VALUE);
+		return distance.getOrDefault(destination, Long.MAX_VALUE);
 	}
 	
 	// TODO: NOT TESTED

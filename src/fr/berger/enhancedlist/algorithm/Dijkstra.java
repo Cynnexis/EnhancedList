@@ -31,35 +31,35 @@ public class Dijkstra {
 	 */
 	@SuppressWarnings("ConstantConditions")
 	@NotNull
-	public static <V, E> Couple<LinkedHashMap<Vertex<V>, Integer>, LinkedHashMap<Vertex<V>, Vertex<V>>> map(@NotNull Graph<V, E> graph, @NotNull Vertex<V> source) {
+	public static <V, E> Couple<LinkedHashMap<Vertex<V>, Long>, LinkedHashMap<Vertex<V>, Vertex<V>>> map(@NotNull Graph<V, E> graph, @NotNull Vertex<V> source) {
 		if (graph == null || source == null)
 			throw new NullPointerException();
 		
 		if (!graph.getVertices().contains(source))
 			throw new IllegalArgumentException();
 		
-		long limit = (long) (graph.getM() + Math.pow(graph.getN(), 2));
+		long limit = (long) (graph.getM() + Math.pow(graph.getN(), 2) + 100);
 		long iteration = 0;
-		LinkedHashMap<Vertex<V>, Integer> dist = new LinkedHashMap<>();
+		LinkedHashMap<Vertex<V>, Long> dist = new LinkedHashMap<>();
 		LinkedHashMap<Vertex<V>, Vertex<V>> prev = new LinkedHashMap<>();
 		Lexicon<Vertex<V>> Q = new Lexicon<>();
 		
 		for (Vertex<V> vertex : graph.getVertices()) {
-			dist.put(vertex, Integer.MAX_VALUE);
+			dist.put(vertex, Long.MAX_VALUE);
 			prev.put(vertex, null);
 			Q.add(vertex);
 		}
 		
-		dist.put(source, 0);
+		dist.put(source, 0L);
 		
 		while (!Q.isEmpty()) {
 			Vertex<V> u = Q.first();
-			int dist_u = Integer.MAX_VALUE;
+			long dist_u = Long.MAX_VALUE;
 			
 			// Search for u such that min(dist(u)) in Q
 			for (Vertex<V> potentialU : Q) {
-				int currentDistance;
-				if ((currentDistance = dist.getOrDefault(potentialU, Integer.MAX_VALUE)) < dist_u) {
+				long currentDistance;
+				if ((currentDistance = dist.getOrDefault(potentialU, Long.MAX_VALUE)) < dist_u) {
 					u = potentialU;
 					dist_u = currentDistance;
 				}
@@ -76,7 +76,12 @@ public class Dijkstra {
 				neighbor.addAll(graph.getPredecessors(u));
 			
 			for (Vertex<V> v : neighbor) {
-				int alt = dist.get(u) + graph.getShortestDistanceBetween(u, v);
+				long alt = dist.get(u) + graph.getShortestDistanceBetween(u, v);
+				
+				// If the value of alt overflowed, put it back to Long.MAX_VALUE (equivalent to +oo)
+				if (alt < 0)
+					alt = Long.MAX_VALUE;
+				
 				if (alt < dist.get(v)) {
 					dist.put(v, alt);
 					prev.put(v, u);
@@ -110,7 +115,7 @@ public class Dijkstra {
 		if (!graph.getVertices().contains(source) || !graph.getVertices().contains(destination))
 			throw new IllegalArgumentException();
 		
-		long limit = (long) (graph.getM() + Math.pow(graph.getN(), 2));
+		long limit = (long) (graph.getM() + Math.pow(graph.getN(), 2) + 100);
 		long iteration = 0;
 		Lexicon<Vertex<V>> vertices = new Lexicon<>();
 		LinkedHashMap<Vertex<V>, Vertex<V>> prev = map(graph, source).getY();
@@ -141,6 +146,8 @@ public class Dijkstra {
 		
 		for (int i = 0; i < vertices.size(); i++)
 			path.add(vertices.get(vertices.size() - i - 1));
+		
+		path.add(destination);
 		
 		//path.deleteNullElement();
 		
