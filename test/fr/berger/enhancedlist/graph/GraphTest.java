@@ -660,4 +660,17 @@ class GraphTest {
 			fail("Sould have thrown exception.");
 		} catch (IllegalArgumentException ignored) { }
 	}
+	
+	@Test
+	void test_getConnectivityDegree() {
+		assertEquals(1L, g1.getConnectivityDegree());
+		assertEquals(2L, g2.getConnectivityDegree());
+		assertEquals(1L, gSym.getConnectivityDegree());
+		assertEquals(1L, gAntiSym.getConnectivityDegree());
+		assertEquals(1L, gTransitive.getConnectivityDegree());
+		assertEquals(1L, gComplete.getConnectivityDegree());
+		assertEquals(1L, gNotComplete.getConnectivityDegree());
+		assertEquals(1L, gReflexive.getConnectivityDegree());
+		assertEquals(2L, gNCo.getConnectivityDegree());
+	}
 }

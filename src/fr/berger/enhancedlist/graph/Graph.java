@@ -45,6 +45,16 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 		setVertices(new Lexicon<>(vertices));
 		setEdges(new Lexicon<>(edges));
 	}
+	public Graph(@NotNull Collection<Vertex<V>> vertices, @NotNull Collection<Edge<E>> edges) {
+		initOriented();
+		setVertices(new Lexicon<>(vertices));
+		setEdges(new Lexicon<>(edges));
+	}
+	public Graph(boolean oriented) {
+		setOriented(oriented);
+		initVertices();
+		initEdges();
+	}
 	@SuppressWarnings("ConstantConditions")
 	public Graph(@NotNull Graph<V, E> graph) {
 		if (graph == null)
@@ -500,11 +510,59 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	
 	/**
 	 * Search every sub-graph in the current graph such that all sub-graphs are connected.
+	 * @return Return the sub-graphs. If the graph is connected, return a list containing the graph.
+	 */
+	// TODO: NOT TESTED
+	public synchronized Lexicon<Graph<V, E>> getConnectedGraphs() {
+		boolean o = isOriented();
+		setOriented(false);
+		
+		Lexicon<Vertex<V>> remainingVertices = new Lexicon<>();
+		// key: any vertex in the current graph ; value: a list of vertices that v can access (connected graph)
+		LinkedHashMap<Vertex<V>, Lexicon<Vertex<V>>> connectedTo = new LinkedHashMap<>();
+		Lexicon<Graph<V, E>> graphs = new Lexicon<>();
+		
+		// Initializing "remainingVertices"
+		remainingVertices.addAll(getVertices());
+		
+		// Constructing "connectedTo"
+		while (!remainingVertices.isEmpty()) {
+			Vertex<V> x = remainingVertices.first();
+			
+			for (Vertex<V> y : getVertices()) {
+				Path<E> path = getPath(x, y);
+				if (path != null) {
+					Lexicon<Vertex<V>> connections = connectedTo.getOrDefault(x, new Lexicon<>());
+					connections.add(y);
+					connectedTo.put(x, connections);
+				}
+			}
+			
+			remainingVertices.remove(x);
+		}
+		
+		for (Map.Entry<Vertex<V>, Lexicon<Vertex<V>>> entry : connectedTo.entrySet()) {
+			Graph<V, E> graph = new Graph<>(o);
+			
+			for (Vertex<V> vertex : entry.getValue()) {
+				graph.getVertices().add(vertex);
+			}
+			
+			graphs.add(graph);
+		}
+		
+		setOriented(o);
+		return graphs;
+	}
+	
+	/**
+	 * Search every sub-graph in the current graph such that all sub-graphs are connected.
 	 * @return Return the number of connected sub-graphs in the graph. If the graph is connected, return 1.
 	 */
 	// TODO: NOT TESTED
-	public long getConnectivityDegree() {
-		throw new NotImplementedException();
+	// TODO: Found another solution without synchornizing the method and changing Graph instance variable
+	public synchronized long getConnectivityDegree() {
+		return getConnectedGraphs().size();
 	}
 	
 	/**
@@ -553,7 +611,14 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	}
 	
 	// TODO: NOT TESTED
-	public static <V, E> Graph<V, E> fromMatrix(Matrix<Integer> matrix) {
+	@SuppressWarnings("ConstantConditions")
+	public static <V, E> Graph<V, E> fromMatrix(@NotNull Matrix<Integer> matrix) {
+		if (matrix == null)
+			throw new NullPointerException();
+		
+		if (matrix.getNbColumns() <= 0 || matrix.getNbColumns() != matrix.getNbRows())
+			throw new IllegalArgumentException();
+		
 		throw new NotImplementedException();
 	}
 	
