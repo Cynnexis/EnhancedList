@@ -1,7 +1,5 @@
 package fr.berger.enhancedlist.graph;
 
-import fr.berger.arrow.Ref;
-import fr.berger.beyondcode.util.EnhancedObservable;
 import fr.berger.enhancedlist.Couple;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -13,39 +11,77 @@ import java.io.Serializable;
 import java.util.Objects;
 import java.util.UUID;
 
+/**
+ * An edge of a graph. It connected two vertices together (it can also connect one vertex to itself)
+ * @param <T> The type parameter of the data that the vertex contains.
+ * @see Graph
+ * @see Vertex
+ * @see Color
+ * @author Valentin Berger
+ */
 public class Edge<T> extends Couple<Vertex<?>, Vertex<?>> implements Serializable, Cloneable {
 	
+	/**
+	 * The unique identifier of this instance of edge It is mandatory because a lot of algorithm in Graph use
+	 * the equal operations to compare two edges, and the data and the color does not make an edge unique in a graph.
+	 * Therefore, an identifier is required.
+	 * @see Graph
+	 * @see UUID
+	 */
 	@NotNull
 	private UUID id;
+	
+	/**
+	 * The data contained by this edge (can be anything, even a null value)
+	 */
 	@Nullable
 	private T data;
 	
+	/**
+	 * The color of the edge if the graph is colored. If it not, the value of color is null. If the graph is coloring,
+	 * the value of color is -1 until a color has been found for this edge.
+	 * @see Color
+	 */
+	@Nullable
+	private Color color;
+	
 	/* CONSTRUCTORS */
 	
+	public Edge(@NotNull UUID id, @Nullable T data, @NotNull Vertex<?> x, @NotNull Vertex<?> y, @Nullable Color color) {
+		super(x, y);
+		setId(id);
+		setData(data);
+		setColor(color);
+	}
 	public Edge(@NotNull UUID id, @Nullable T data, @NotNull Vertex<?> x, @NotNull Vertex<?> y) {
 		super(x, y);
 		setId(id);
 		setData(data);
+		initColor();
 	}
 	public Edge(@Nullable T data, @NotNull Vertex<?> x, @NotNull Vertex<?> y) {
 		super(x, y);
 		initData();
 		setData(data);
+		initColor();
 	}
 	public Edge(@NotNull Vertex<?> x, @NotNull Vertex<?> y) {
 		super(x, y);
 		initData();
 		initData();
+		initColor();
 	}
 	public Edge(@Nullable T data) {
 		super();
 		initData();
 		setData(data);
+		initColor();
 	}
 	public Edge() {
 		super();
 		initId();
 		initData();
+		initColor();
 	}
 	
 	/* EDGE METHODS */
@@ -88,11 +124,25 @@ public class Edge<T> extends Couple<Vertex<?>, Vertex<?>> implements Serializabl
 		setData(null);
 	}
 	
+	@Nullable
+	public Color getColor() {
+		return color;
+	}
+	
+	public void setColor(@Nullable Color color) {
+		this.color = color;
+	}
+	
+	protected void initColor() {
+		setColor(null);
+	}
+	
 	/* SERIALIZATION OVERRIDES */
 	
 	private void writeObject(@NotNull ObjectOutputStream stream) throws IOException {
 		stream.writeObject(getId());
 		stream.writeObject(getData());
+		stream.writeObject(getColor());
 		stream.writeObject(getX());
 		stream.writeObject(getY());
 	}
@@ -101,6 +151,7 @@ public class Edge<T> extends Couple<Vertex<?>, Vertex<?>> implements Serializabl
 	private void readObject(@NotNull ObjectInputStream stream) throws IOException, ClassNotFoundException {
 		setId((UUID) stream.readObject());
 		setData((T) stream.readObject());
+		setColor((Color) stream.readObject());
 		setX((Vertex<?>) stream.readObject());
 		setY((Vertex<?>) stream.readObject());
 	}
@@ -115,13 +166,14 @@ public class Edge<T> extends Couple<Vertex<?>, Vertex<?>> implements Serializabl
 		Edge<?> edge = (Edge<?>) o;
 		return Objects.equals(getId(), edge.getId()) &&
 				Objects.equals(getData(), edge.getData()) &&
+				Objects.equals(getColor(), edge.getColor()) &&
 				Objects.equals(getX(), edge.getX()) &&
 				Objects.equals(getY(), edge.getY());
 	}
 	
 	@Override
 	public int hashCode() {
-		return Objects.hash(super.hashCode(), getId(), getData());
+		return Objects.hash(super.hashCode(), getId(), getData(), getColor());
 	}
 	
 	@Override
@@ -131,6 +183,7 @@ public class Edge<T> extends Couple<Vertex<?>, Vertex<?>> implements Serializabl
 				", x=" + getX() +
 				", y=" + getY() +
 				", data=" + data +
+				", color=" + color +
 				'}';
 	}
 }

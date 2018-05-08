@@ -86,18 +86,9 @@ public class VertexBuilder<T> {
 	}
 	
 	@NotNull
-	public VertexBuilder<T> setSuccessors(@NotNull Collection<Ref<Vertex<?>>> successors) {
-		vertex.setSuccessors(new Lexicon<>(successors));
-		return this;
-	}
-	@NotNull
-	public VertexBuilder<T> setSuccessors(@NotNull Ref<Vertex<?>>... successors) {
-		vertex.setSuccessors(new Lexicon<>(successors));
-		return this;
-	}
-	
-	@NotNull
 	public Vertex<T> createVertex() {
+		// Regenerate the id to make it unique
+		vertex.setId(UUID.randomUUID());
 		return vertex;
 	}
 }

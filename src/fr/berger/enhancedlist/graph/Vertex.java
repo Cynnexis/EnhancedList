@@ -16,54 +16,112 @@ import java.util.UUID;
 
 /**
  * Vertex of a graph.
- * @param <T> The type paramter of the data that the vertex contains.
+ * @param <T> The type parameter of the data that the vertex contains.
  * @see Graph
  * @see Edge
+ * @see Color
+ * @see fr.berger.enhancedlist.graph.builder.VertexBuilder
  * @author Valentin Berger
  */
 public class Vertex<T> extends EnhancedObservable implements Serializable, Cloneable {
 	
+	/**
+	 * The unique identifier of this instance of vertex. It is mandatory because a lot of algorithm in Graph use
+	 * the equal operations to compare two vertices, and the data, the string and the color does not make a vertex
+	 * unique in a graph. Therefore, an identifier is required.
+	 * @see Graph
+	 * @see UUID
+	 */
 	@NotNull
 	private UUID id;
+	
+	/**
+	 * The data contained by this vertex (can be anything, even a null value)
+	 */
 	@Nullable
 	private T data;
+	
+	/**
+	 * The display label of the vertex. It is not necessary unique, but it is recommended to be so.
+	 */
 	@NotNull
 	private String label;
-	@Deprecated
-	@NotNull
-	private Lexicon<Ref<Vertex<?>>> successors;
+	
+	/**
+	 * The color of the vertex if the graph is colored. If it not, the value of color is null. If the graph is coloring,
+	 * the value of color is -1 until a color has been found for this vertex.
+	 * @see Color
+	 */
+	@Nullable
+	private Color color;
 	
 	/* CONSTRUCTORS */
 	
-	public Vertex(@NotNull UUID id, @Nullable T data, @NotNull String label, @NotNull Lexicon<Ref<Vertex<?>>> successors) {
+	public Vertex(@NotNull UUID id, @Nullable T data, @NotNull String label, @Nullable Color color) {
 		setId(id);
 		setData(data);
 		setLabel(label);
-		setSuccessors(successors);
+		setColor(color);
 	}
-	public Vertex(@Nullable T data, @NotNull String label, @NotNull Lexicon<Ref<Vertex<?>>> successors) {
+	public Vertex(@NotNull UUID id, @Nullable T data, @NotNull String label) {
+		setId(id);
+		setData(data);
+		setLabel(label);
+		initColor();
+	}
+	public Vertex(@Nullable T data, @NotNull String label) {
 		initId();
 		setData(data);
 		setLabel(label);
-		setSuccessors(successors);
-	}
-	public Vertex(@NotNull String label, @NotNull Lexicon<Ref<Vertex<?>>> successors) {
-		initId();
-		initData();
-		setLabel(label);
-		setSuccessors(successors);
-	}
-	public Vertex(@NotNull Lexicon<Ref<Vertex<?>>> successors) {
-		initId();
-		initData();
-		initLabel();
-		setSuccessors(successors);
+		initColor();
 	}
 	public Vertex(@NotNull String label) {
 		initId();
 		initData();
 		setLabel(label);
-		initSuccessors();
+		initColor();
+	}
+	public Vertex(char label) {
+		initId();
+		initData();
+		setLabel(Character.toString(label));
+		initColor();
+	}
+	public Vertex(int label) {
+		initId();
+		initData();
+		setLabel(Integer.toString(label));
+		initColor();
+	}
+	public Vertex(short label) {
+		initId();
+		initData();
+		setLabel(Short.toString(label));
+		initColor();
+	}
+	public Vertex(byte label) {
+		initId();
+		initData();
+		setLabel(Byte.toString(label));
+		initColor();
+	}
+	public Vertex(long label) {
+		initId();
+		initData();
+		setLabel(Long.toString(label));
+		initColor();
+	}
+	public Vertex(float label) {
+		initId();
+		initData();
+		setLabel(Float.toString(label));
+		initColor();
+	}
+	public Vertex(double label) {
+		initId();
+		initData();
+		setLabel(Double.toString(label));
+		initColor();
 	}
 	@SuppressWarnings("ConstantConditions")
 	public Vertex(@NotNull Vertex<T> vertex) {
@@ -73,13 +131,13 @@ public class Vertex<T> extends EnhancedObservable implements Serializable, Clone
 		setId(vertex.getId());
 		setData(vertex.getData());
 		setLabel(vertex.getLabel());
-		setSuccessors(vertex.getSuccessors());
+		setColor(vertex.color);
 	}
 	public Vertex() {
 		initId();
 		initData();
 		initLabel();
-		initSuccessors();
+		initColor();
 	}
 	
 	/* VERTEX METHODS */
@@ -144,30 +202,18 @@ public class Vertex<T> extends EnhancedObservable implements Serializable, Clone
 		setLabel(Integer.toString(Irregular.rangeInt(0, true, 100, true)));
 	}
 	
-	@SuppressWarnings("ConstantConditions")
-	public Lexicon<Ref<Vertex<?>>> getSuccessors() {
-		if (successors == null)
-			initSuccessors();
-		
-		return successors;
+	@Nullable
+	public Color getColor() {
+		return color;
 	}
 	
-	@SuppressWarnings("ConstantConditions")
-	public void setSuccessors(@NotNull Lexicon<Ref<Vertex<?>>> successors) {
-		if (successors == null)
-			throw new NullPointerException();
-		
-		this.successors = successors;
-		configureSuccessors();
+	public void setColor(@Nullable Color color) {
+		this.color = color;
+		snap(this.color);
 	}
 	
-	protected void initSuccessors() {
-		setSuccessors(new Lexicon<>());
-	}
-	
-	protected void configureSuccessors() {
-		getSuccessors().setAcceptNullValues(false);
-		snap(getSuccessors());
+	protected void initColor() {
+		setColor(null);
 	}
 	
 	/* SERIALIZATION OVERRIDES */
@@ -176,7 +222,7 @@ public class Vertex<T> extends EnhancedObservable implements Serializable, Clone
 		stream.writeObject(getId());
 		stream.writeObject(getData());
 		stream.writeBytes(getLabel());
-		stream.writeObject(getSuccessors());
+		stream.writeObject(getColor());
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -184,7 +230,7 @@ public class Vertex<T> extends EnhancedObservable implements Serializable, Clone
 		setId((UUID) stream.readObject());
 		setData((T) stream.readObject());
 		setLabel(stream.readUTF());
-		setSuccessors((Lexicon<Ref<Vertex<?>>>) stream.readObject());
+		setColor((Color) stream.readObject());
 	}
 	
 	/* OVERRIDES */
@@ -197,12 +243,12 @@ public class Vertex<T> extends EnhancedObservable implements Serializable, Clone
 		return Objects.equals(getId(), vertex.getId()) &&
 				Objects.equals(getData(), vertex.getData()) &&
 				Objects.equals(getLabel(), vertex.getLabel()) &&
-				Objects.equals(getSuccessors(), vertex.getSuccessors());
+				Objects.equals(getColor(), vertex.getColor());
 	}
 	
 	@Override
 	public int hashCode() {
-		return Objects.hash(getId(), getData(), getLabel(), getSuccessors());
+		return Objects.hash(getId(), getData(), getLabel(), getColor());
 	}
 	
 	@Override
@@ -211,6 +257,7 @@ public class Vertex<T> extends EnhancedObservable implements Serializable, Clone
 				"id=" + id +
 				", data=" + data +
 				", label='" + label + '\'' +
+				", color=" + color +
 				'}';
 	}
 }
