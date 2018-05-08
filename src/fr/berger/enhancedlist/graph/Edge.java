@@ -86,6 +86,11 @@ public class Edge<T> extends Couple<Vertex<?>, Vertex<?>> implements Serializabl
 	
 	/* EDGE METHODS */
 	
+	@NotNull
+	public Edge<T> getSymmetry() {
+		return new Edge<>(getId(), getData(), getY(), getX(), getColor());
+	}
+	
 	/* GETTERS & SETTERS */
 	
 	@SuppressWarnings("ConstantConditions")
@@ -158,17 +163,27 @@ public class Edge<T> extends Couple<Vertex<?>, Vertex<?>> implements Serializabl
 	
 	/* OVERRIDES */
 	
-	@Override
-	public boolean equals(Object o) {
+	/**
+	 * Check if o is equal to this instance, regardless of the identifier.
+	 * @param o The object to check
+	 * @return Return {@code true} if o and this instance are equivalent, {@code false} otherwise.
+	 */
+	public boolean equivalent(Object o) {
 		if (this == o) return true;
 		if (!(o instanceof Edge)) return false;
 		if (!super.equals(o)) return false;
 		Edge<?> edge = (Edge<?>) o;
-		return Objects.equals(getId(), edge.getId()) &&
-				Objects.equals(getData(), edge.getData()) &&
+		return Objects.equals(getData(), edge.getData()) &&
 				Objects.equals(getColor(), edge.getColor()) &&
 				Objects.equals(getX(), edge.getX()) &&
 				Objects.equals(getY(), edge.getY());
+	}
+	
+	@Override
+	public boolean equals(Object o) {
+		if (!equivalent(o)) return false;
+		Edge<?> edge = (Edge<?>) o;
+		return Objects.equals(getId(), edge.getId());
 	}
 	
 	@Override

@@ -235,15 +235,26 @@ public class Vertex<T> extends EnhancedObservable implements Serializable, Clone
 	
 	/* OVERRIDES */
 	
-	@Override
-	public boolean equals(Object o) {
+	/**
+	 * Check if o is equal to this instance, regardless of the identifier.
+	 * @param o The object to check
+	 * @return Return {@code true} if o and this instance are equivalent, {@code false} otherwise.
+	 */
+	public boolean equivalent(Object o) {
 		if (this == o) return true;
 		if (!(o instanceof Vertex)) return false;
 		Vertex<?> vertex = (Vertex<?>) o;
-		return Objects.equals(getId(), vertex.getId()) &&
-				Objects.equals(getData(), vertex.getData()) &&
+		return Objects.equals(getData(), vertex.getData()) &&
 				Objects.equals(getLabel(), vertex.getLabel()) &&
 				Objects.equals(getColor(), vertex.getColor());
+	}
+	
+	@Override
+	public boolean equals(Object o) {
+		if (!equivalent(o))
+			return false;
+		Vertex<?> vertex = (Vertex<?>) o;
+		return Objects.equals(getId(), vertex.getId());
 	}
 	
 	@Override

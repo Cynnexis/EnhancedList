@@ -268,11 +268,41 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	}
 	
 	/**
+	 * Search all edges e such that e = (source, destination) or e = (destination, source) if the graph is not oriented.
+	 * @param source The first vertex.
+	 * @param destination The second Vertex.
+	 * @return Return a list of edges in the graph e = (source, destination) or e = (destination, source) if the graph
+	 * is not oriented, or an empty list if no corresponding edge has been found in the graph.
+	 */
+	@SuppressWarnings("ConstantConditions")
+	@NotNull
+	public Lexicon<Edge<E>> searchAllEdges(@NotNull Vertex<?> source, @NotNull Vertex<?> destination) {
+		if (source == null || destination == null)
+			throw new NullPointerException();
+		
+		Lexicon<Edge<E>> edges = new LexiconBuilder<Edge<E>>()
+				.setAcceptNullValues(false)
+				.setAcceptDuplicates(false)
+				.createLexicon();
+		for (int i = 0, maxi = getEdges().size(); i < maxi; i++) {
+			Edge<E> e = getEdges().get(i);
+			
+			if (Objects.equals(e.getX(), source) && Objects.equals(e.getY(), destination) || (
+					!isOriented() && Objects.equals(e.getY(), source) && Objects.equals(e.getX(), destination)
+			))
+				edges.add(e);
+		}
+		
+		return edges;
+	}
+	
+	/**
 	 * Search the edge e such that e = (source, destination) or e = (destination, source) if the graph is not oriented.
+	 * Stop at the first corresponding edge.
 	 * @param source The first vertex.
 	 * @param destination The second Vertex.
 	 * @return Return the edge in the graph e = (source, destination) or e = (destination, source) if the graph is not
-	 * oriented, or {@code null} is the edge has not been found in the graph.
+	 * oriented, or {@code null} if no corresponding edge has been found in the graph.
 	 */
 	@SuppressWarnings("ConstantConditions")
 	@Nullable
@@ -494,6 +524,74 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	}
 	
 	/**
+	 * Create the subgraph containing only the vertices in {@code remainingVertices} and the edges between those
+	 * vertices.
+	 * @param remainingVertices The remaining vertices in the subgraph.
+	 * @return Return the subgraph with {@code remainingVertices} as vertices
+	 */
+	@SuppressWarnings("ConstantConditions")
+	@NotNull
+	public Graph<V, E> getSubgraphRemaining(@NotNull Lexicon<Vertex<V>> remainingVertices) {
+		if (remainingVertices == null)
+			throw new NullPointerException();
+		
+		// Check that all vertices are in the current graph
+		if (!getVertices().containsAll(remainingVertices))
+			throw new IllegalArgumentException();
+		
+		Lexicon<Edge<E>> remainingEdges = new LexiconBuilder<Edge<E>>()
+				.setAcceptNullValues(false)
+				.setAcceptDuplicates(true)
+				.createLexicon();
+		
+		for (int i = 0, maxi = remainingVertices.size(); i < maxi; i++) {
+			Vertex<V> vi = remainingVertices.get(i);
+			
+			for (int j = 0, maxj = remainingVertices.size(); j < maxj; j++) {
+				if (i != j) {
+					Vertex<V> vj = remainingVertices.get(j);
+					remainingEdges.addAll(searchAllEdges(vi, vj));
+				}
+			}
+		}
+		
+		return new Graph<>(isOriented(), remainingVertices, remainingEdges);
+	}
+	@SafeVarargs
+	@NotNull
+	public final Graph<V, E> getSubgraphRemaining(@NotNull Vertex<V>... remainingVertices) {
+		return getSubgraphRemaining(new Lexicon<>(remainingVertices));
+	}
+	
+	/**
+	 * Create the subgraph containing all vertices except those in {@code exceptVertices}.
+	 * @param exceptVertices The vertices to NOT include in the subgraph.
+	 * @return Return the subgraph without the vertices contain in {@code remainingVertices}
+	 */
+	@SuppressWarnings("ConstantConditions")
+	@NotNull
+	public Graph<V, E> getSubgraphExcept(@NotNull Lexicon<Vertex<V>> exceptVertices) {
+		if (exceptVertices == null)
+			throw new NullPointerException();
+		
+		Lexicon<Vertex<V>> remainingVertices = new LexiconBuilder<Vertex<V>>()
+				.setAcceptNullValues(false)
+				.setAcceptDuplicates(false)
+				.createLexicon();
+		
+		for (Vertex<V> v : getVertices())
+			if (!exceptVertices.contains(v))
+				remainingVertices.add(v);
+		
+		return getSubgraphRemaining(remainingVertices);
+	}
+	@SafeVarargs
+	@NotNull
+	public final Graph<V, E> getSubgraphExcept(@NotNull Vertex<V>... exceptVertices) {
+		return getSubgraphExcept(new Lexicon<>(exceptVertices));
+	}
+	
+	/**
 	 * Tell if the graph is connected.
 	 * @return Return {@code true} if the graph is connected, {@code false} otherwise.
 	 */
@@ -559,7 +657,7 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 		}
 		
 		for (Map.Entry<Vertex<V>, Lexicon<Vertex<V>>> entry : connectedTo.entrySet()) {
-			Graph<V, E> graph = new Graph<>(o);
+			Graph<V, E> graph = new Graph<>();
 			
 			for (Vertex<V> vertex : entry.getValue()) {
 				graph.getVertices().add(vertex);
@@ -587,7 +685,20 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	 */
 	// TODO: NOT TESTED
 	public Graph<V, E> getSymmetry() {
-		throw new NotImplementedException();
+		Graph<V, E> gSym = new Graph<>(isOriented());
+		gSym.setVertices(getVertices());
+		
+		Lexicon<Edge<E>> edges = new LexiconBuilder<Edge<E>>()
+				.setAcceptDuplicates(false)
+				.setAcceptNullValues(false)
+				.createLexicon();
+		
+		for (Edge<E> e : getEdges())
+			edges.add(e.getSymmetry());
+		
+		gSym.setEdges(edges);
+		
+		return gSym;
 	}
 	
 	/**
@@ -758,25 +869,34 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 		F.add(beginning);
 		
 		while (!F.isEmpty()) {
-			Vertex<V> x = F.first();
+			Vertex<V> x = F.last();
 			
 			if (x != null) {
 				Lexicon<Vertex<V>> successors = getSuccessors(x);
-				for (Vertex<V> y : successors) {
-					if (!mark.getOrDefault(y, false)) {
-						mark.put(y, true);
-						F.add(y);
+				if (!successors.isEmpty()) {
+					for (Vertex<V> y : successors) {
+						if (!mark.getOrDefault(y, true)) {
+							mark.put(y, true);
+							F.add(y);
+						}
 					}
 				}
 				
 				route.put(x, p);
-				F.remove(x);
+				F.remove(x); // remove x (which is the last element in F)
 				
 				if (action != null)
 					action.apply(new Couple<>(x, p));
 				
 				p++;
 			}
+			
+			String output = "DEBUG> F = [";
+			for (Vertex<V> vertex : F)
+				output += vertex.getLabel() + ", ";
+			output = output.substring(0, output.length() - 2);
+			output += "]";
+			System.out.println(output);
 		}
 		
 		return route;
@@ -972,6 +1092,11 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 		snap(getVertices());
 	}
 	
+	public void resetVerticesID() {
+		for (Vertex<V> vertex : getVertices())
+			vertex.setId(UUID.randomUUID());
+	}
+	
 	public int getN() {
 		return getVertices().size();
 	}
@@ -1005,6 +1130,11 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 		snap(getEdges());
 	}
 	
+	public void resetEdgesID() {
+		for (Edge<E> edge : getEdges())
+			edge.setId(UUID.randomUUID());
+	}
+	
 	public int getM() {
 		return getEdges().size();
 	}
@@ -1025,6 +1155,57 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	}
 	
 	/* OVERRIDES */
+	
+	/**
+	 * Check if o is equal to this instance, regardless of the identifier.
+	 * @param o The object to check
+	 * @return Return {@code true} if o and this instance are equivalent, {@code false} otherwise.
+	 */
+	public boolean equivalent(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof Graph)) return false;
+		Graph<?, ?> that = (Graph<?, ?>) o;
+		
+		if (this.isOriented() != that.isOriented())
+			return false;
+		
+		if (this.getVertices().size() != that.getVertices().size() ||
+				this.getEdges().size() != that.getEdges().size())
+			return false;
+		
+		boolean found = false;
+		// Vertices
+		for (int i = 0, maxi = this.getVertices().size(); i < maxi; i++) {
+			Vertex<V> thisV = this.getVertices().get(i);
+			
+			found = false;
+			for (int j = 0, maxj = that.getVertices().size(); j < maxj && !found; j++) {
+				Vertex<?> thatV = that.getVertices().get(j);
+				if (thisV.equivalent(thatV))
+					found = true;
+			}
+			
+			if (!found)
+				return false;
+		}
+		
+		// Edges
+		for (int i = 0, maxi = this.getEdges().size(); i < maxi; i++) {
+			Edge<E> thisE = this.getEdges().get(i);
+			
+			found = false;
+			for (int j = 0, maxj = that.getEdges().size(); j < maxj && !found; j++) {
+				Edge<?> thatE = that.getEdges().get(j);
+				if (thisE.equivalent(thatE))
+					found = true;
+			}
+			
+			if (!found)
+				return false;
+		}
+		
+		return true;
+	}
 	
 	@Override
 	public boolean equals(Object o) {

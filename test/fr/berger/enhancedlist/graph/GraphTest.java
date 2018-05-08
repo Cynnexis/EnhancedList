@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Vector;
+import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -31,6 +32,9 @@ class GraphTest {
 	Edge<Object> e16;
 	Edge<Object> e17;
 	Graph<Object, Object> g1; // See course page 1
+	
+	// g1p
+	Graph<Object, Object> g1s; // Subgraph of g1. See course page 2,5
 	
 	// g2
 	Vertex<Void> v2a;
@@ -88,6 +92,9 @@ class GraphTest {
 	// gAntiSym
 	Graph<Object, Object> gAntiSym;
 	
+	// gAntiSymSym: The symmetric of gAntiSym
+	Graph<Object, Object> gAntiSymSym;
+	
 	// gTransitive
 	Vertex<Void> vt1;
 	Vertex<Void> vt2;
@@ -138,6 +145,33 @@ class GraphTest {
 	
 	Graph<Void, Void> gNCo;
 	
+	// gBreadth: See course 4.5
+	Vertex<Integer> vga;
+	Vertex<Integer> vgb;
+	Vertex<Integer> vgc;
+	Vertex<Integer> vgd;
+	Vertex<Integer> vge;
+	Vertex<Integer> vgf;
+	Vertex<Integer> vgg;
+	Vertex<Integer> vgh;
+	Vertex<Integer> vgi;
+	Edge<Void> eg1;
+	Edge<Void> eg2;
+	Edge<Void> eg3;
+	Edge<Void> eg4;
+	Edge<Void> eg5;
+	Edge<Void> eg6;
+	Edge<Void> eg7;
+	Edge<Void> eg8;
+	Edge<Void> eg9;
+	Edge<Void> eg10;
+	Edge<Void> eg11;
+	Edge<Void> eg12;
+	Edge<Void> eg13;
+	Edge<Void> eg14;
+	Edge<Void> eg15;
+	Graph<Integer, Void> gBreadth;
+	
 	@BeforeEach
 	void setup() {
 		// g1
@@ -166,6 +200,13 @@ class GraphTest {
 				v11, v12, v13, v14
 		), new Lexicon<>(
 				e11, e12, e13, e14, e15, e16, e17
+		));
+		
+		// g1s
+		g1s = new Graph<>(true, new Lexicon<>(
+				v11, v12, v13
+		), new Lexicon<>(
+				e11, e12, e15, e16
 		));
 		
 		// g2
@@ -245,6 +286,13 @@ class GraphTest {
 				vs1, vs2, vs3, vs4, vs5
 		), new Lexicon<>(
 				es1, es3, es5, es7
+		));
+		
+		// gAntiSymSym
+		gAntiSymSym = new Graph<>(true, new Lexicon<>(
+				vs1, vs2, vs3, vs4, vs5
+		), new Lexicon<>(
+				es2, es4, es6, es8
 		));
 		
 		// gTransitive
@@ -341,6 +389,37 @@ class GraphTest {
 				vnco1, vnco2, vnco3, vnco4, vnco5
 		), new Lexicon<>(
 				enco1, enco2, enco3, enco4
+		));
+		 
+		 // gBreadth
+		vga = new Vertex<>(0, "a");
+		vgb = new Vertex<>(0, "b");
+		vgc = new Vertex<>(0, "c");
+		vgd = new Vertex<>(0, "d");
+		vge = new Vertex<>(0, "e");
+		vgf = new Vertex<>(0, "f");
+		vgg = new Vertex<>(0, "g");
+		vgh = new Vertex<>(0, "h");
+		vgi = new Vertex<>(0, "i");
+		eg1 = new Edge<>(vga, vgf);
+		eg2 = new Edge<>(vga, vgi);
+		eg3 = new Edge<>(vgi, vgc);
+		eg4 = new Edge<>(vgc, vga);
+		eg5 = new Edge<>(vgh, vgc);
+		eg6 = new Edge<>(vgf, vgh);
+		eg7 = new Edge<>(vgd, vgf);
+		eg8 = new Edge<>(vgd, vgh);
+		eg9 = new Edge<>(vgi, vgg);
+		eg10 = new Edge<>(vge, vgc);
+		eg11 = new Edge<>(vgh, vge);
+		eg12 = new Edge<>(vgd, vgb);
+		eg13 = new Edge<>(vgg, vge);
+		eg14 = new Edge<>(vge, vgb);
+		eg15 = new Edge<>(vgg, vgb);
+		gBreadth = new Graph<>(true, new Lexicon<>(
+				vga, vgb, vgc, vgd, vge, vgf, vgg, vgh, vgi
+		), new Lexicon<>(
+				eg1, eg2, eg3, eg4, eg5, eg6, eg7, eg8, eg9, eg10, eg11, eg12, eg13, eg14, eg15
 		));
 	}
 	
@@ -562,6 +641,25 @@ class GraphTest {
 	}
 	
 	@Test
+	void test_getSubgraph() {
+		Graph<Object, Object> potential_g1s = g1.getSubgraphRemaining(v11, v12, v13);
+		System.out.println("GraphTest.test_getSubgraph> g1.getSubgraphRemaining(v1, v2, v3) = ");
+		System.out.println(potential_g1s.toString());
+		
+		assertEquals(g1s, potential_g1s);
+		assertNotEquals(g1, potential_g1s);
+		
+		System.out.println();
+		
+		potential_g1s = g1.getSubgraphExcept(v14);
+		System.out.println("GraphTest.test_getSubgraph> g1.getSubgraphExcept(v4) = ");
+		System.out.println(potential_g1s.toString());
+		
+		assertEquals(g1s, potential_g1s);
+		assertNotEquals(g1, potential_g1s);
+	}
+	
+	@Test
 	void test_isConnected() {
 		assertTrue(gSym.isConnected());
 		assertTrue(gAntiSym.isConnected());
@@ -694,5 +792,48 @@ class GraphTest {
 		assertEquals(1L, gNotComplete.getConnectivityDegree());
 		assertEquals(1L, gReflexive.getConnectivityDegree());
 		assertEquals(2L, gNCo.getConnectivityDegree());
+	}
+	
+	@Test
+	void test_getSymmetry() {
+		assertTrue(gSym.equivalent(gSym.getSymmetry()));
+		assertTrue(gAntiSymSym.equivalent(gAntiSym.getSymmetry()));
+		assertFalse(gAntiSym.equivalent(gAntiSym.getSymmetry()));
+	}
+	
+	@Test
+	void test_breadthFirstSearch() {
+		LinkedHashMap<Vertex<Integer>, Integer> map = gBreadth.breadthFirstSearch(vga, new Function<Couple<Vertex<Integer>, Integer>, Void>() {
+			@Override
+			public Void apply(Couple<Vertex<Integer>, Integer> args) {
+				if (args != null && args.getX() != null && args.getY() != null)
+					args.getX().setData(args.getY());
+				return null;
+			}
+		});
+		
+		System.out.println("GraphTest.test_breadthFirstSearch> map = {");
+		for (Map.Entry<Vertex<Integer>, Integer> entry : map.entrySet())
+			System.out.println("\t" + entry.getKey().getLabel() + " -> " + entry.getValue());
+		System.out.println("}");
+		
+		assertEquals(1, vga.getData().intValue());
+		assertEquals(2, vgf.getData().intValue());
+		assertEquals(3, vgi.getData().intValue());
+		assertEquals(4, vgh.getData().intValue());
+		assertEquals(5, vgc.getData().intValue());
+		assertEquals(6, vgg.getData().intValue());
+		assertEquals(7, vge.getData().intValue());
+		assertEquals(8, vgb.getData().intValue());
+		assertEquals(0, vgd.getData().intValue());
+	}
+	
+	@Test
+	void test_equivalent() {
+		assertTrue(g1.equivalent(g1));
+		assertTrue(g1s.equivalent(g1s));
+		assertTrue(g2.equivalent(g2));
+		assertFalse(g1.equivalent(g2));
+		assertFalse(g2.equivalent(g1));
 	}
 }
