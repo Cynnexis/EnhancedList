@@ -145,6 +145,30 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 		return getPredecessors(vertex.getElement());
 	}
 	
+	@SuppressWarnings("ConstantConditions")
+	@NotNull
+	public Lexicon<Vertex<V>> getNeighbors(@NotNull Vertex<V> vertex) {
+		if (vertex == null)
+			throw new NullPointerException();
+		
+		if (!getVertices().contains(vertex))
+			throw new IllegalArgumentException();
+		
+		return new LexiconBuilder<Vertex<V>>()
+				.setAcceptNullValues(false)
+				.addAll(getSuccessors(vertex))
+				.addAll(getPredecessors(vertex))
+				.createLexicon();
+	}
+	@SuppressWarnings("ConstantConditions")
+	@NotNull
+	public Lexicon<Vertex<V>> getNeighbors(@NotNull Ref<Vertex<V>> vertex) {
+		if (vertex == null)
+			throw new NullPointerException();
+		
+		return getNeighbors(vertex.getElement());
+	}
+	
 	/**
 	 * Build a list of all the sources in the graph.
 	 * @return A list of sources in the graph.
@@ -473,12 +497,9 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	 * Tell if the graph is connected.
 	 * @return Return {@code true} if the graph is connected, {@code false} otherwise.
 	 */
-	// TODO: Found another solution without synchornizing the method and changing Graph instance variable
-	public synchronized boolean isConnected() {
-		boolean o = isOriented();
+	public boolean isConnected() {
 		boolean connected = true;
 		
-		setOriented(false);
 		for (int i = 0, maxi = getVertices().size(); i < maxi && connected; i++) {
 			Vertex<V> vi = getVertices().get(i);
 			
@@ -488,7 +509,7 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 					Vertex<V> vj = getVertices().get(j);
 					
 					// Search a path between vi and vj
-					Path<E> path = getPath(vi, vj);
+					Path<E> path = getPath(vi, vj, false);
 					
 					if (path == null)
 						connected = false;
@@ -496,7 +517,6 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 			}
 		}
 		
-		setOriented(o);
 		return connected;
 	}
 	
@@ -513,10 +533,7 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	 * @return Return the sub-graphs. If the graph is connected, return a list containing the graph.
 	 */
 	// TODO: NOT TESTED
-	public synchronized Lexicon<Graph<V, E>> getConnectedGraphs() {
-		boolean o = isOriented();
-		setOriented(false);
-		
+	public Lexicon<Graph<V, E>> getConnectedGraphs() {
 		Lexicon<Vertex<V>> remainingVertices = new Lexicon<>();
 		// key: any vertex in the current graph ; value: a list of vertices that v can access (connected graph)
 		LinkedHashMap<Vertex<V>, Lexicon<Vertex<V>>> connectedTo = new LinkedHashMap<>();
@@ -551,7 +568,6 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 			graphs.add(graph);
 		}
 		
-		setOriented(o);
 		return graphs;
 	}
 	
@@ -628,28 +644,34 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	 * Compute a path between {@code source} and {@code destination}.
 	 * @param source The vertex where the walk begins.
 	 * @param destination The vertex where the walk ends.
+	 * @param regardingOrientation If true, it will allow the algorithm to go backwards if {@code graph.isConnected()}
+	 * 	                           is false. If regardingOrientation is false, the algorithm may go backward.
 	 * @return A path between {@code source} and {@code destination}.
 	 */
 	@SuppressWarnings("ConstantConditions")
 	@Nullable
-	public Path<E> getPath(@NotNull Vertex<V> source, @NotNull Vertex<V> destination) {
+	public Path<E> getPath(@NotNull Vertex<V> source, @NotNull Vertex<V> destination, boolean regardingOrientation) {
 		if (source == null || destination == null)
 			throw new NullPointerException();
 		
 		if (!getVertices().contains(source) || !getVertices().contains(destination))
 			throw new IllegalArgumentException();
 		
-		Lexicon<Vertex<V>> vertices = Dijkstra.getPath(this, source, destination);
+		Lexicon<Vertex<V>> vertices = Dijkstra.getPath(this, source, destination, regardingOrientation);
 		
 		if (vertices == null)
 			return null;
 		
-		return Path.constructPathFromVertices(this, vertices);
+		return Path.constructPathFromVertices(this, regardingOrientation, vertices);
+	}
+	@Nullable
+	public Path<E> getPath(@NotNull Vertex<V> source, @NotNull Vertex<V> destination) {
+		return getPath(source, destination, true);
 	}
 	
 	@SuppressWarnings("ConstantConditions")
 	@NotNull
-	public LinkedHashMap<Vertex<V>, Long> mapDistanceFrom(@NotNull Vertex<V> source) {
+	public LinkedHashMap<Vertex<V>, Long> mapDistanceFrom(@NotNull Vertex<V> source, boolean regardingOrientation) {
 		if (source == null)
 			throw new NullPointerException();
 		
@@ -675,8 +697,11 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 			if (x != null) {
 				Lexicon<Vertex<V>> neighbor = getSuccessors(x);
 				
-				if (!isOriented())
+				if (!regardingOrientation || (regardingOrientation && !isOriented()))
 					neighbor.addAll(getPredecessors(x));
+				
+				neighbor.setAcceptNullValues(false);
+				neighbor.setAcceptDuplicates(false);
 				
 				for (Vertex<V> y : neighbor) {
 					if (!mark.getOrDefault(y, false)) {
@@ -693,18 +718,25 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 		
 		return distance;
 	}
+	@NotNull
+	public LinkedHashMap<Vertex<V>, Long> mapDistanceFrom(@NotNull Vertex<V> source) {
+		return mapDistanceFrom(source, true);
+	}
 	
 	@SuppressWarnings("ConstantConditions")
-	public long getShortestDistanceBetween(@NotNull Vertex<V> source, @NotNull Vertex<V> destination) {
+	public long getShortestDistanceBetween(@NotNull Vertex<V> source, @NotNull Vertex<V> destination, boolean regardingOrientation) {
 		if (source == null || destination == null)
 			throw new NullPointerException();
 		
 		if (!getVertices().contains(source) || !getVertices().contains(destination))
 			throw new IllegalArgumentException();
 		
-		LinkedHashMap<Vertex<V>, Long> distance = mapDistanceFrom(source);
+		LinkedHashMap<Vertex<V>, Long> distance = mapDistanceFrom(source, regardingOrientation);
 		
 		return distance.getOrDefault(destination, Long.MAX_VALUE);
+	}
+	public long getShortestDistanceBetween(@NotNull Vertex<V> source, @NotNull Vertex<V> destination) {
+		return getShortestDistanceBetween(source, destination, true);
 	}
 	
 	// TODO: NOT TESTED

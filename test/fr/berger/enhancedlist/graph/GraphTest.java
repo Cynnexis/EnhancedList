@@ -371,6 +371,14 @@ class GraphTest {
 	}
 	
 	@Test
+	void test_getNeighbors() {
+		assertTrue(g1.getNeighbors(v11).containsAll(v12, v13));
+		assertTrue(g1.getNeighbors(v12).containsAll(v13, v13, v14));
+		assertTrue(g1.getNeighbors(v13).containsAll(v11, v12, v14));
+		assertTrue(g1.getNeighbors(v14).containsAll(v12, v13, v14));
+	}
+	
+	@Test
 	void test_getSources() {
 		assertEquals(new Lexicon<>(v11), g1.getSources());
 		assertEquals(new Lexicon<>(v2a), g2.getSources());
@@ -641,7 +649,7 @@ class GraphTest {
 	void test_Dijkstra_getPath() {
 		Lexicon<Vertex<Void>> vertices = Dijkstra.getPath(g2, v2a, v2l);
 		
-		System.out.print("GraphTest.test_Dijkstra_getPath> path(g2) = {\n\t");
+		System.out.print("GraphTest.test_Dijkstra_getPath> path(g2, a, l) = {\n\t");
 		for (Vertex<Void> vertex : vertices)
 			System.out.print(vertex.getLabel() + " -> ");
 		System.out.println("END\n}");
@@ -659,6 +667,20 @@ class GraphTest {
 			Dijkstra.getPath(g2, v2a, vr1); // vr1 ∉ g2.V
 			fail("Sould have thrown exception.");
 		} catch (IllegalArgumentException ignored) { }
+		
+		// Test in not oriented graph
+		g2.setOriented(false);
+		
+		vertices = Dijkstra.getPath(g2, v2c, v2a);
+		
+		assertNotNull(vertices);
+		
+		System.out.print("GraphTest.test_Dijkstra_getPath> (not oriented) path(g2, c, a) = {\n\t");
+		for (Vertex<Void> vertex : vertices)
+			System.out.print(vertex.getLabel() + " -> ");
+		System.out.println("END\n}");
+		
+		assertEquals(new Lexicon<>(v2c, v2a), vertices);
 	}
 	
 	@Test

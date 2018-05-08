@@ -39,10 +39,11 @@ public class Path<T> extends Lexicon<Edge<T>> implements Serializable, Cloneable
 	
 	@SuppressWarnings("ConstantConditions")
 	@NotNull
-	public static <V, E> Path<E> constructPathFromVertices(@NotNull Graph<V, E> graph, @NotNull Lexicon<Vertex<V>> vertices) {
+	public static <V, E> Path<E> constructPathFromVertices(@NotNull Graph<V, E> graph, boolean regardingOrientation, @NotNull Lexicon<Vertex<V>> vertices) {
 		if (graph == null || vertices == null)
 			throw new NullPointerException();
 		
+		boolean canGoBackward = !regardingOrientation || (regardingOrientation && !graph.isOriented());
 		Path<E> path = new Path<>();
 		
 		for (int i = 0, maxi = vertices.size(); i < maxi - 1; i++) {
@@ -56,7 +57,7 @@ public class Path<T> extends Lexicon<Edge<T>> implements Serializable, Cloneable
 			for (int j = 0, maxj = graph.getEdges().size(); j < maxj && edge == null; j++) {
 				Edge<E> currentEdge = graph.getEdges().get(j);
 				if (Objects.equals(currentEdge.getX(), v) && Objects.equals(currentEdge.getY(), next) ||
-						(!graph.isOriented() && Objects.equals(currentEdge.getY(), v) && Objects.equals(currentEdge.getX(), next)))
+						(canGoBackward && Objects.equals(currentEdge.getY(), v) && Objects.equals(currentEdge.getX(), next)))
 					edge = currentEdge;
 			}
 			
@@ -70,9 +71,17 @@ public class Path<T> extends Lexicon<Edge<T>> implements Serializable, Cloneable
 		
 		return path;
 	}
+	@NotNull
+	public static <V, E> Path<E> constructPathFromVertices(@NotNull Graph<V, E> graph, @NotNull Lexicon<Vertex<V>> vertices) {
+		return constructPathFromVertices(graph, true, vertices);
+	}
+	@SuppressWarnings("unchecked")
+	public static <V, E> Path constructPathFromVertices(@NotNull Graph<V, E> graph, boolean regardingOrientation, @NotNull Vertex<V>... vertices) {
+		return constructPathFromVertices(graph, regardingOrientation, new Lexicon<>(vertices));
+	}
 	@SuppressWarnings("unchecked")
 	public static <V, E> Path constructPathFromVertices(@NotNull Graph<V, E> graph, @NotNull Vertex<V>... vertices) {
-		return constructPathFromVertices(graph, new Lexicon<>(vertices));
+		return constructPathFromVertices(graph, true, new Lexicon<>(vertices));
 	}
 	
 	/* PATH METHODS */

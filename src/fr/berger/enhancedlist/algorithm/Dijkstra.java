@@ -17,6 +17,8 @@ public class Dijkstra {
 	 * Map all the graph using the Dijkstra's algorithm by starting from {@code source}.
 	 * @param graph The graph.
 	 * @param source The source (vertex) in the graph.
+	 * @param regardingOrientation If true, it will allow the algorithm to go backwards if {@code graph.isConnected()}
+	 *                             is false. If regardingOrientation is false, the algorithm may go backward.
 	 * @param <V> Vertex type.
 	 * @param <E> Edge type.
 	 * @return Return a couple where the x part represent a LinkedHashMap where the keys are all the vertices in
@@ -31,7 +33,7 @@ public class Dijkstra {
 	 */
 	@SuppressWarnings("ConstantConditions")
 	@NotNull
-	public static <V, E> Couple<LinkedHashMap<Vertex<V>, Long>, LinkedHashMap<Vertex<V>, Vertex<V>>> map(@NotNull Graph<V, E> graph, @NotNull Vertex<V> source) {
+	public static <V, E> Couple<LinkedHashMap<Vertex<V>, Long>, LinkedHashMap<Vertex<V>, Vertex<V>>> map(@NotNull Graph<V, E> graph, @NotNull Vertex<V> source, boolean regardingOrientation) {
 		if (graph == null || source == null)
 			throw new NullPointerException();
 		
@@ -72,11 +74,14 @@ public class Dijkstra {
 			// Adding all successors
 			neighbor.addAll(graph.getSuccessors(u));
 			// Adding all predecessors if the graph is not oriented
-			if (!graph.isOriented())
+			if (!regardingOrientation || (regardingOrientation && !graph.isOriented()))
 				neighbor.addAll(graph.getPredecessors(u));
 			
+			neighbor.setAcceptNullValues(false);
+			neighbor.setAcceptDuplicates(false);
+			
 			for (Vertex<V> v : neighbor) {
-				long alt = dist.get(u) + graph.getShortestDistanceBetween(u, v);
+				long alt = dist.get(u) + graph.getShortestDistanceBetween(u, v, regardingOrientation);
 				
 				// If the value of alt overflowed, put it back to Long.MAX_VALUE (equivalent to +oo)
 				if (alt < 0)
@@ -96,19 +101,25 @@ public class Dijkstra {
 		
 		return new Couple<>(dist, prev);
 	}
+	@NotNull
+	public static <V, E> Couple<LinkedHashMap<Vertex<V>, Long>, LinkedHashMap<Vertex<V>, Vertex<V>>> map(@NotNull Graph<V, E> graph, @NotNull Vertex<V> source) {
+		return map(graph, source, true);
+	}
 	
 	/**
 	 * Give a path from {@code source} to {@code destination} in {@code graph}.
 	 * @param graph The graph.
 	 * @param source The vertex "source" in {@code graph}.
 	 * @param destination The vertex "destination" in {@code graph}.
+	 * @param regardingOrientation If true, it will allow the algorithm to go backwards if {@code graph.isConnected()}
+	 *                             is false. If regardingOrientation is false, the algorithm may go backward.
 	 * @param <V> Vertex type.
 	 * @param <E> Edge type.
 	 * @return Return a list of vertex from {@code source} to {@code destination}.
 	 */
 	@SuppressWarnings("ConstantConditions")
 	@Nullable
-	public static <V, E> Lexicon<Vertex<V>> getPath(@NotNull Graph<V, E> graph, @NotNull Vertex<V> source, @NotNull Vertex<V> destination) {
+	public static <V, E> Lexicon<Vertex<V>> getPath(@NotNull Graph<V, E> graph, @NotNull Vertex<V> source, @NotNull Vertex<V> destination, boolean regardingOrientation) {
 		if (graph == null || source == null || destination == null)
 			throw new NullPointerException();
 		
@@ -118,7 +129,7 @@ public class Dijkstra {
 		long limit = (long) (graph.getM() + Math.pow(graph.getN(), 2) + 100);
 		long iteration = 0;
 		Lexicon<Vertex<V>> vertices = new Lexicon<>();
-		LinkedHashMap<Vertex<V>, Vertex<V>> prev = map(graph, source).getY();
+		LinkedHashMap<Vertex<V>, Vertex<V>> prev = map(graph, source, regardingOrientation).getY();
 		
 		// Add all vertices from destination to the source using "prev"
 		Vertex<V> x = prev.get(destination);
@@ -152,5 +163,9 @@ public class Dijkstra {
 		//path.deleteNullElement();
 		
 		return path;
+	}
+	@Nullable
+	public static <V, E> Lexicon<Vertex<V>> getPath(@NotNull Graph<V, E> graph, @NotNull Vertex<V> source, @NotNull Vertex<V> destination) {
+		return getPath(graph, source, destination, true);
 	}
 }
