@@ -904,7 +904,6 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 		return getShortestDistanceBetween(source, destination, true);
 	}
 	
-	// TODO: NOT TESTED
 	public synchronized LinkedHashMap<Vertex<V>, Integer> breadthFirstSearch(@NotNull Vertex<V> beginning, @Nullable Function<Couple<Vertex<V>, Integer>, Void> action) {
 		LinkedHashMap<String, Integer> route = new LinkedHashMap<>();
 		LinkedHashMap<String, Boolean> mark = new LinkedHashMap<>();
@@ -954,47 +953,81 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	}
 	
 	// TODO: NOT TESTED
-	public LinkedHashMap<Vertex<V>, Integer> depthFirstSearch(@NotNull Vertex<V> beginning, @Nullable Function<Couple<Vertex<V>, Integer>, Void> action) {
-		// TODO: Replace by "UUID"
-		LinkedHashMap<Vertex<V>, Integer> route = new LinkedHashMap<>();
-		LinkedHashMap<Vertex<V>, Boolean> mark = new LinkedHashMap<>();
-		Lexicon<Vertex<V>> P = new LexiconBuilder<Vertex<V>>()
+	public synchronized LinkedHashMap<Vertex<V>, Integer> depthFirstSearch(@NotNull Vertex<V> beginning, @Nullable Function<Couple<Vertex<V>, Integer>, Void> action) {
+		LinkedHashMap<String, Integer> route = new LinkedHashMap<>();
+		LinkedHashMap<String, Boolean> mark = new LinkedHashMap<>();
+		Lexicon<String> P = new LexiconBuilder<String>()
 				.setAcceptNullValues(false)
 				.setAcceptDuplicates(false)
 				.createLexicon();
 		int p = 1;
+		Comparator<Vertex<V>> comparator = new Comparator<Vertex<V>>() {
+			@Override
+			public int compare(Vertex<V> v1, Vertex<V> v2) {
+				return -v1.getLabel().compareTo(v2.getLabel());
+			}
+		};
 		
 		for (Vertex<V> v : getVertices()) {
-			mark.put(v, false);
-			route.put(v, 0);
+			mark.put(v.getId().toString(), false);
+			route.put(v.getId().toString(), 0);
 		}
 		
-		mark.put(beginning, true);
-		P.add(beginning);
+		mark.put(beginning.getId().toString(), true);
+		P.add(beginning.getId().toString());
 		
 		while (!P.isEmpty()) {
-			Vertex<V> x = P.last();
+			Vertex<V> head = searchVertexFromId(P.last());
 			
-			if (x != null) {
-				Lexicon<Vertex<V>> successors = getSuccessors(x);
-				for (Vertex<V> y : successors) {
-					if (!mark.getOrDefault(y, false)) {
-						mark.put(y, true);
-						P.add(y);
-					}
-				}
+			if (head != null) {
+				Lexicon<Vertex<V>> successors = getSuccessors(head);
+				successors.setAcceptNullValues(false);
+				successors.setAcceptDuplicates(false);
+				successors.sort(comparator);
 				
-				route.put(x, p);
-				P.remove(x);
+				do {
+					for (Vertex<V> y : successors) {
+						if (!mark.get(y.getId().toString())) {
+							mark.put(y.getId().toString(), true);
+							P.add(y.getId().toString());
+							
+							// Change new head (similar to "searchVertexFromId(P.last());")
+							head = y;
+						}
+					}
+					
+					// Change the new successors
+					successors = getSuccessors(head);
+					successors.setAcceptNullValues(false);
+					successors.setAcceptDuplicates(false);
+					successors.sort(comparator);
+					
+					// Delete all vertices already marked in "successors"
+					for (int i = 0; i < successors.size(); i++) {
+						if (mark.get(successors.get(i).getId().toString())) {
+							successors.remove(i);
+							i--;
+						}
+					}
+					
+					// If the list is not empty, do it again...
+				} while (!successors.isEmpty());
+				
+				route.put(P.last(), p);
+				P.remove(P.last());
 				
 				if (action != null)
-					action.apply(new Couple<>(x, p));
+					action.apply(new Couple<>(head, p));
 				
 				p++;
 			}
 		}
 		
-		return route;
+		LinkedHashMap<Vertex<V>, Integer> vRoute = new LinkedHashMap<>();
+		for (Map.Entry<String, Integer> entry : route.entrySet())
+			vRoute.put(searchVertexFromId(entry.getKey()), entry.getValue());
+		
+		return vRoute;
 	}
 	
 	/**

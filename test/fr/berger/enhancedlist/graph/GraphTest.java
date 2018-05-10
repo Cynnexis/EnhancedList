@@ -853,6 +853,33 @@ class GraphTest {
 	}
 	
 	@Test
+	void test_depthFirstSearch() {
+		LinkedHashMap<Vertex<Integer>, Integer> map = gBreadth.depthFirstSearch(vga, new Function<Couple<Vertex<Integer>, Integer>, Void>() {
+			@Override
+			public Void apply(Couple<Vertex<Integer>, Integer> args) {
+				if (args != null && args.getX() != null && args.getY() != null)
+					args.getX().setData(args.getY());
+				return null;
+			}
+		});
+		
+		System.out.println("GraphTest.test_depthFirstSearch> map = {");
+		for (Map.Entry<Vertex<Integer>, Integer> entry : map.entrySet())
+			System.out.println("\t" + entry.getKey().getLabel() + " -> " + entry.getValue());
+		System.out.println("}");
+		
+		assertEquals(1, vgc.getData().intValue());
+		assertEquals(2, vgb.getData().intValue());
+		assertEquals(3, vge.getData().intValue());
+		assertEquals(4, vgh.getData().intValue());
+		assertEquals(5, vgf.getData().intValue());
+		assertEquals(6, vgg.getData().intValue());
+		assertEquals(7, vgi.getData().intValue());
+		assertEquals(8, vga.getData().intValue());
+		assertEquals(0, vgd.getData().intValue());
+	}
+	
+	@Test
 	void test_equivalent() {
 		assertTrue(g1.equivalent(g1));
 		assertTrue(g1s.equivalent(g1s));
