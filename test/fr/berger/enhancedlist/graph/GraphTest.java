@@ -493,6 +493,30 @@ class GraphTest {
 		assertEquals(4, g1.getDegree(v14));
 	}
 	
+	@SuppressWarnings("Duplicates")
+	@Test
+	void test_searchVertexFromId() {
+		assertEquals(v11, g1.searchVertexFromId(v11.getId()));
+		assertEquals(v12, g1.searchVertexFromId(v12.getId()));
+		assertEquals(v13, g1.searchVertexFromId(v13.getId()));
+		assertEquals(v14, g1.searchVertexFromId(v14.getId()));
+		assertEquals(v2a, g2.searchVertexFromId(v2a.getId()));
+		assertEquals(v2b, g2.searchVertexFromId(v2b.getId()));
+		assertNull(g1.searchVertexFromId(v2c.getId()));
+	}
+	
+	@SuppressWarnings("Duplicates")
+	@Test
+	void test_searchEdgeFromId() {
+		assertEquals(e11, g1.searchEdgeFromId(e11.getId()));
+		assertEquals(e12, g1.searchEdgeFromId(e12.getId()));
+		assertEquals(e13, g1.searchEdgeFromId(e13.getId()));
+		assertEquals(e14, g1.searchEdgeFromId(e14.getId()));
+		assertEquals(e21, g2.searchEdgeFromId(e21.getId()));
+		assertEquals(e22, g2.searchEdgeFromId(e22.getId()));
+		assertNull(g1.searchEdgeFromId(e23.getId()));
+	}
+	
 	@Test
 	void test_searchEdge() {
 		assertEquals(e11, g1.searchEdge(v11, v12));

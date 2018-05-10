@@ -267,6 +267,54 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 		return getDegree(vertex.getElement());
 	}
 	
+	@SuppressWarnings("ConstantConditions")
+	@Nullable
+	public Vertex<V> searchVertexFromId(@NotNull String id) {
+		if (id == null)
+			throw new NullPointerException();
+		
+		Vertex<V> vertex = null;
+		for (int i = 0, maxi = getVertices().size(); i < maxi && vertex == null; i++) {
+			Vertex<V> vi = getVertices().get(i);
+			if (Objects.equals(vi.getId().toString(), id))
+				vertex = vi;
+		}
+		
+		return vertex;
+	}
+	@SuppressWarnings("ConstantConditions")
+	@Nullable
+	public Vertex<V> searchVertexFromId(@NotNull UUID id) {
+		if (id == null)
+			throw new NullPointerException();
+		
+		return searchVertexFromId(id.toString());
+	}
+	
+	@SuppressWarnings("ConstantConditions")
+	@Nullable
+	public Edge<E> searchEdgeFromId(@NotNull String id) {
+		if (id == null)
+			throw new NullPointerException();
+		
+		Edge<E> edge = null;
+		for (int i = 0, maxi = getEdges().size(); i < maxi && edge == null; i++) {
+			Edge<E> ei = getEdges().get(i);
+			if (Objects.equals(ei.getId().toString(), id))
+				edge = ei;
+		}
+		
+		return edge;
+	}
+	@SuppressWarnings("ConstantConditions")
+	@Nullable
+	public Edge<E> searchEdgeFromId(@NotNull UUID id) {
+		if (id == null)
+			throw new NullPointerException();
+		
+		return searchEdgeFromId(id.toString());
+	}
+	
 	/**
 	 * Search all edges e such that e = (source, destination) or e = (destination, source) if the graph is not oriented.
 	 * @param source The first vertex.
@@ -789,21 +837,24 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 		if (!getVertices().contains(source))
 			throw new IllegalArgumentException();
 		
-		LinkedHashMap<Vertex<V>, Boolean> mark = new LinkedHashMap<>();
-		LinkedHashMap<Vertex<V>, Long> distance = new LinkedHashMap<>();
-		Lexicon<Vertex<V>> F = new Lexicon<>();
+		LinkedHashMap<String, Boolean> mark = new LinkedHashMap<>();
+		LinkedHashMap<String, Long> distance = new LinkedHashMap<>();
+		Lexicon<String> F = new LexiconBuilder<String>()
+				.setAcceptNullValues(false)
+				.setAcceptDuplicates(false)
+				.createLexicon();
 		
 		for (Vertex<V> x : getVertices()) {
-			mark.put(x, false);
-			distance.put(x, Long.MAX_VALUE);
+			mark.put(x.getId().toString(), false);
+			distance.put(x.getId().toString(), Long.MAX_VALUE);
 		}
 		
-		mark.put(source, true);
-		F.add(source);
-		distance.put(source, 0L);
+		mark.put(source.getId().toString(), true);
+		F.add(source.getId().toString());
+		distance.put(source.getId().toString(), 0L);
 		
 		while (!F.isEmpty()) {
-			Vertex<V> x = F.first();
+			Vertex<V> x = searchVertexFromId(F.last());
 			
 			if (x != null) {
 				Lexicon<Vertex<V>> neighbor = getSuccessors(x);
@@ -815,19 +866,22 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 				neighbor.setAcceptDuplicates(false);
 				
 				for (Vertex<V> y : neighbor) {
-					if (!mark.getOrDefault(y, false)) {
-						mark.put(y, true);
-						distance.put(y, distance.getOrDefault(x, 0L) + 1);
-						F.add(y);
+					if (!mark.get(y.getId().toString())) {
+						mark.put(y.getId().toString(), true);
+						distance.put(y.getId().toString(), distance.get(x.getId().toString()) + 1);
+						F.add(y.getId().toString());
 					}
 				}
 				
-				F.remove(x);
+				F.remove(x.getId().toString()); // remove the last element (x)
 			}
-			
 		}
 		
-		return distance;
+		LinkedHashMap<Vertex<V>, Long> vDistance = new LinkedHashMap<>();
+		for (Map.Entry<String, Long> entry : distance.entrySet())
+			vDistance.put(searchVertexFromId(entry.getKey()), entry.getValue());
+		
+		return vDistance;
 	}
 	@NotNull
 	public LinkedHashMap<Vertex<V>, Long> mapDistanceFrom(@NotNull Vertex<V> source) {
@@ -851,59 +905,57 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	}
 	
 	// TODO: NOT TESTED
-	public LinkedHashMap<Vertex<V>, Integer> breadthFirstSearch(@NotNull Vertex<V> beginning, @Nullable Function<Couple<Vertex<V>, Integer>, Void> action) {
-		LinkedHashMap<Vertex<V>, Integer> route = new LinkedHashMap<>();
-		LinkedHashMap<Vertex<V>, Boolean> mark = new LinkedHashMap<>();
-		Lexicon<Vertex<V>> F = new LexiconBuilder<Vertex<V>>()
+	public synchronized LinkedHashMap<Vertex<V>, Integer> breadthFirstSearch(@NotNull Vertex<V> beginning, @Nullable Function<Couple<Vertex<V>, Integer>, Void> action) {
+		LinkedHashMap<String, Integer> route = new LinkedHashMap<>();
+		LinkedHashMap<String, Boolean> mark = new LinkedHashMap<>();
+		Lexicon<String> F = new LexiconBuilder<String>()
 			.setAcceptNullValues(false)
 			.setAcceptDuplicates(false)
 			.createLexicon();
 		int p = 1;
 		
 		for (Vertex<V> v : getVertices()) {
-			mark.put(v, false);
-			route.put(v, 0);
+			mark.put(v.getId().toString(), false);
+			route.put(v.getId().toString(), 0);
 		}
 		
-		mark.put(beginning, true);
-		F.add(beginning);
+		mark.put(beginning.getId().toString(), true);
+		F.add(beginning.getId().toString());
 		
 		while (!F.isEmpty()) {
-			Vertex<V> x = F.last();
+			Vertex<V> x = searchVertexFromId(F.first());
 			
 			if (x != null) {
 				Lexicon<Vertex<V>> successors = getSuccessors(x);
 				if (!successors.isEmpty()) {
 					for (Vertex<V> y : successors) {
-						if (!mark.getOrDefault(y, true)) {
-							mark.put(y, true);
-							F.add(y);
+						if (!mark.get(y.getId().toString())) {
+							mark.put(y.getId().toString(), true);
+							F.add(y.getId().toString());
 						}
 					}
 				}
 				
-				route.put(x, p);
-				F.remove(x); // remove x (which is the last element in F)
+				route.put(x.getId().toString(), p);
+				F.remove(x.getId().toString()); // remove x (which is the last element in F)
 				
 				if (action != null)
 					action.apply(new Couple<>(x, p));
 				
 				p++;
 			}
-			
-			String output = "DEBUG> F = [";
-			for (Vertex<V> vertex : F)
-				output += vertex.getLabel() + ", ";
-			output = output.substring(0, output.length() - 2);
-			output += "]";
-			System.out.println(output);
 		}
 		
-		return route;
+		LinkedHashMap<Vertex<V>, Integer> vRoute = new LinkedHashMap<>();
+		for (Map.Entry<String, Integer> entry : route.entrySet())
+			vRoute.put(searchVertexFromId(entry.getKey()), entry.getValue());
+		
+		return vRoute;
 	}
 	
 	// TODO: NOT TESTED
 	public LinkedHashMap<Vertex<V>, Integer> depthFirstSearch(@NotNull Vertex<V> beginning, @Nullable Function<Couple<Vertex<V>, Integer>, Void> action) {
+		// TODO: Replace by "UUID"
 		LinkedHashMap<Vertex<V>, Integer> route = new LinkedHashMap<>();
 		LinkedHashMap<Vertex<V>, Boolean> mark = new LinkedHashMap<>();
 		Lexicon<Vertex<V>> P = new LexiconBuilder<Vertex<V>>()
