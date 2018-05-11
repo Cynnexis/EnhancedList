@@ -806,6 +806,42 @@ class GraphTest {
 	}
 	
 	@Test
+	void test_getConnectedGraphs() {
+		// Creating graphs test
+		Graph<Void, Void> gco1 = new Graph<>(true,
+				new Lexicon<>(
+						v2a, v2b, v2c, v2d, v2e, v2f, v2g, v2h, v2l
+				),
+				new Lexicon<>(
+						e21, e22, e23, e24, e25, e26, e27, e28, e29, e210, e211, e212, e213, e214
+				)
+		);
+		Graph<Void, Void> gco2 = new Graph<>(true,
+				new Lexicon<>(
+						v2i, v2j, v2k
+				),
+				new Lexicon<>(
+						e215, e216, e217, e218
+				)
+		);
+		
+		Lexicon<Graph<Void, Void>> connectedGraphs = g2.getConnectedGraphs();
+		assertEquals(2, connectedGraphs.size());
+		
+		Graph<Void, Void> g21 = connectedGraphs.get(0);
+		Graph<Void, Void> g22 = connectedGraphs.get(1);
+		
+		if (g21.getVertices().size() > g22.getVertices().size()) {
+			assertTrue(g21.equivalent(gco1));
+			assertTrue(g22.equivalent(gco2));
+		}
+		else {
+			assertTrue(g21.equivalent(gco2));
+			assertTrue(g22.equivalent(gco1));
+		}
+	}
+	
+	@Test
 	void test_getConnectivityDegree() {
 		assertEquals(1L, g1.getConnectivityDegree());
 		assertEquals(2L, g2.getConnectivityDegree());

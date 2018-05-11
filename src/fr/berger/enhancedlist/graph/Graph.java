@@ -678,41 +678,61 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	 * Search every sub-graph in the current graph such that all sub-graphs are connected.
 	 * @return Return the sub-graphs. If the graph is connected, return a list containing the graph.
 	 */
-	// TODO: NOT TESTED
 	public Lexicon<Graph<V, E>> getConnectedGraphs() {
-		Lexicon<Vertex<V>> remainingVertices = new Lexicon<>();
-		// key: any vertex in the current graph ; value: a list of vertices that v can access (connected graph)
-		LinkedHashMap<Vertex<V>, Lexicon<Vertex<V>>> connectedTo = new LinkedHashMap<>();
-		Lexicon<Graph<V, E>> graphs = new Lexicon<>();
+		Lexicon<Graph<V, E>> graphs = new LexiconBuilder<Graph<V, E>>()
+				.setAcceptNullValues(false)
+				.setAcceptDuplicates(false)
+				.createLexicon();
 		
-		// Initializing "remainingVertices"
-		remainingVertices.addAll(getVertices());
+		Lexicon<Lexicon<Vertex<V>>> subgraphs = new LexiconBuilder<Lexicon<Vertex<V>>>()
+				.setAcceptNullValues(false)
+				.setAcceptDuplicates(false)
+				.createLexicon();
 		
-		// Constructing "connectedTo"
-		while (!remainingVertices.isEmpty()) {
-			Vertex<V> x = remainingVertices.first();
+		Lexicon<Vertex<V>> connectedVertices;
+		
+		for (int i = 0, maxi = getVertices().size(); i < maxi; i++) {
+			Vertex<V> vi = getVertices().get(i);
 			
-			for (Vertex<V> y : getVertices()) {
-				Path<E> path = getPath(x, y);
-				if (path != null) {
-					Lexicon<Vertex<V>> connections = connectedTo.getOrDefault(x, new Lexicon<>());
-					connections.add(y);
-					connectedTo.put(x, connections);
+			// The HashMap "mapi" contains all vertices of the current graph, but the ones where their key is > 0 are
+			// the ones which are in the same connected subgraph.
+			LinkedHashMap<Vertex<V>, Long> mapi = mapDistanceFrom(vi, false);
+			//LinkedHashMap<Vertex<V>, Integer> mapi = breadthFirstSearch(vi);
+			
+			// Construct "connectedVertices"
+			connectedVertices = new LexiconBuilder<Vertex<V>>()
+					.setAcceptNullValues(false)
+					.setAcceptDuplicates(false)
+					.createLexicon();
+			for (Map.Entry<Vertex<V>, Long> entry : mapi.entrySet()) {
+				if (entry.getValue() >= 0 && entry.getValue() != Long.MAX_VALUE)
+					connectedVertices.add(entry.getKey());
+			}
+			
+			// Search in "subgraphs" if "vi" belongs to one of the sub-graphs
+			boolean found = false;
+			for (int j = 0, maxj = subgraphs.size(); j < maxj && !found; j++) {
+				for (Lexicon<Vertex<V>> subgraph : subgraphs) {
+					if (subgraph.contains(vi))
+						found = true;
 				}
 			}
 			
-			remainingVertices.remove(x);
+			if (!found) {
+				// Add the new "connectedVertices" to "subgraphs"
+				subgraphs.add(new LexiconBuilder<Vertex<V>>()
+						.setAcceptNullValues(false)
+						.setAcceptDuplicates(false)
+						.addAll(connectedVertices)
+						.createLexicon()
+				);
+			}
 		}
 		
-		for (Map.Entry<Vertex<V>, Lexicon<Vertex<V>>> entry : connectedTo.entrySet()) {
-			Graph<V, E> graph = new Graph<>();
-			
-			for (Vertex<V> vertex : entry.getValue()) {
-				graph.getVertices().add(vertex);
-			}
-			
-			graphs.add(graph);
-		}
+		// Construct the graphs from "subgraphs"
+		for (Lexicon<Vertex<V>> subgraph : subgraphs)
+			if (subgraph != null && !subgraph.isEmpty())
+				graphs.add(getSubgraphRemaining(subgraph));
 		
 		return graphs;
 	}
@@ -721,9 +741,7 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	 * Search every sub-graph in the current graph such that all sub-graphs are connected.
 	 * @return Return the number of connected sub-graphs in the graph. If the graph is connected, return 1.
 	 */
-	// TODO: NOT TESTED
-	// TODO: Found another solution without synchornizing the method and changing Graph instance variable
-	public synchronized long getConnectivityDegree() {
+	public long getConnectivityDegree() {
 		return getConnectedGraphs().size();
 	}
 	
@@ -731,7 +749,6 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	 * Construct the symmetry of the current graph.
 	 * @return Return the symmetry of the current graph.
 	 */
-	// TODO: NOT TESTED
 	public Graph<V, E> getSymmetry() {
 		Graph<V, E> gSym = new Graph<>(isOriented());
 		gSym.setVertices(getVertices());
@@ -904,6 +921,7 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 		return getShortestDistanceBetween(source, destination, true);
 	}
 	
+	@NotNull
 	public synchronized LinkedHashMap<Vertex<V>, Integer> breadthFirstSearch(@NotNull Vertex<V> beginning, @Nullable Function<Couple<Vertex<V>, Integer>, Void> action) {
 		LinkedHashMap<String, Integer> route = new LinkedHashMap<>();
 		LinkedHashMap<String, Boolean> mark = new LinkedHashMap<>();
@@ -951,8 +969,12 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 		
 		return vRoute;
 	}
+	@NotNull
+	public synchronized LinkedHashMap<Vertex<V>, Integer> breadthFirstSearch(@NotNull Vertex<V> beginning) {
+		return breadthFirstSearch(beginning, null);
+	}
 	
-	// TODO: NOT TESTED
+	@NotNull
 	public synchronized LinkedHashMap<Vertex<V>, Integer> depthFirstSearch(@NotNull Vertex<V> beginning, @Nullable Function<Couple<Vertex<V>, Integer>, Void> action) {
 		LinkedHashMap<String, Integer> route = new LinkedHashMap<>();
 		LinkedHashMap<String, Boolean> mark = new LinkedHashMap<>();
@@ -1028,6 +1050,10 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 			vRoute.put(searchVertexFromId(entry.getKey()), entry.getValue());
 		
 		return vRoute;
+	}
+	@NotNull
+	public synchronized LinkedHashMap<Vertex<V>, Integer> depthFirstSearch(@NotNull Vertex<V> beginning) {
+		return depthFirstSearch(beginning, null);
 	}
 	
 	/**
