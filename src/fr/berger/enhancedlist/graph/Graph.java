@@ -833,7 +833,54 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	// TODO: NOT TESTED
 	@NotNull
 	public Lexicon<Edge<E>> getBridges() {
-		throw new NotImplementedException();
+		Lexicon<Edge<E>> bridges = new LexiconBuilder<Edge<E>>()
+				.setAcceptNullValues(false)
+				.setAcceptDuplicates(false)
+				.createLexicon();
+		
+		// "degrees" map all edges to a connectivity degree in a graph without this edge.
+		LinkedHashMap<String, Long> degrees = new LinkedHashMap<>();
+		
+		for (int i = 0, maxi = getEdges().size(); i < maxi; i++) {
+			Edge<E> ei = getEdges().get(i);
+			
+			// Create a graph without the vertex "ei"
+			Graph<V, E> g = new Graph<>(isOriented());
+			Lexicon<Edge<E>> edges = new LexiconBuilder<Edge<E>>()
+					.setAcceptNullValues(false)
+					.setAcceptDuplicates(false)
+					.createLexicon();
+			Lexicon<Vertex<V>> vertices = new LexiconBuilder<Vertex<V>>()
+					.setAcceptNullValues(false)
+					.setAcceptDuplicates(false)
+					.addAll(getVertices())
+					.createLexicon();
+			
+			for (Edge<E> e : getEdges())
+				if (!Objects.equals(e, ei))
+					edges.add(e);
+			
+			g.setVertices(vertices);
+			g.setEdges(edges);
+			
+			// Get the connectivity degree
+			degrees.put(ei.getId().toString(), g.getConnectivityDegree());
+		}
+		
+		// Now that all degrees have been computed, search the maximum
+		long maxDegree = 0;
+		for (Map.Entry<String, Long> entry : degrees.entrySet()) {
+			if (maxDegree < entry.getValue())
+				maxDegree = entry.getValue();
+		}
+		
+		// Now, construct "bridges" from "maxDegree" and "degrees"
+		if (maxDegree > 1)
+			for (Map.Entry<String, Long> entry : degrees.entrySet())
+				if (entry.getValue() == maxDegree)
+					bridges.add(searchEdgeFromId(entry.getKey()));
+		
+		return bridges;
 	}
 	
 	/**

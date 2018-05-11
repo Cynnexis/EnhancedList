@@ -869,6 +869,13 @@ class GraphTest {
 	}
 	
 	@Test
+	void test_getBridges() {
+		assertEquals(new Lexicon<>(e211), g2.getBridges());
+		assertEquals(new Lexicon<>(), g1.getBridges());
+		assertEquals(new Lexicon<>(), gReflexive.getBridges());
+	}
+	
+	@Test
 	void test_breadthFirstSearch() {
 		LinkedHashMap<Vertex<Integer>, Integer> map = gBreadth.breadthFirstSearch(vga, new Function<Couple<Vertex<Integer>, Integer>, Void>() {
 			@Override
