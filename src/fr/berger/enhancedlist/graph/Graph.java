@@ -6,10 +6,8 @@ import fr.berger.enhancedlist.Couple;
 import fr.berger.enhancedlist.algorithm.Dijkstra;
 import fr.berger.enhancedlist.lexicon.Lexicon;
 import fr.berger.enhancedlist.lexicon.LexiconBuilder;
-import fr.berger.enhancedlist.matrix.Matrix;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -812,10 +810,9 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 		
 		// Now that all degrees have been computed, search the maximum
 		long maxDegree = 0;
-		for (Map.Entry<String, Long> entry : degrees.entrySet()) {
+		for (Map.Entry<String, Long> entry : degrees.entrySet())
 			if (maxDegree < entry.getValue())
 				maxDegree = entry.getValue();
-		}
 		
 		// Now, construct "articulationPoints" from "maxDegree" and "degrees"
 		if (maxDegree > 1)
@@ -869,10 +866,9 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 		
 		// Now that all degrees have been computed, search the maximum
 		long maxDegree = 0;
-		for (Map.Entry<String, Long> entry : degrees.entrySet()) {
+		for (Map.Entry<String, Long> entry : degrees.entrySet())
 			if (maxDegree < entry.getValue())
 				maxDegree = entry.getValue();
-		}
 		
 		// Now, construct "bridges" from "maxDegree" and "degrees"
 		if (maxDegree > 1)
@@ -883,23 +879,29 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 		return bridges;
 	}
 	
+	/*
 	/**
 	 * Compute a matrix which represents the graph in a mathematical viewpoint.
 	 * @return The matrix.
-	 */
+	 *
 	// TODO: NOT TESTED
 	@NotNull
 	public Matrix<Integer> toMatrix() {
 		Matrix<Integer> matrix = new Matrix<>(getN(), getN(), 0);
 		
-		for (int i = 0, maxi = getVertices().size(); i < maxi; i++) {
-			Vertex<V> vertex = getVertices().get(i);
-			Lexicon<Vertex<V>> successors = getSuccessors(vertex);
+		for (int i = 0, maxi = getEdges().size(); i < maxi; i++) {
+			Edge<E> ei = getEdges().get(i);
+			int xi = getVertices().search((Vertex<V>) ei.getX()).get(0);
+			int yi = getVertices().search((Vertex<V>) ei.getY()).get(0);
 			
-			// TODO: Continue...
+			Integer coefficient = matrix.get(yi, xi);
+			if (coefficient == null)
+				coefficient = 0;
+			
+			matrix.set(yi, xi, coefficient + 1);
 		}
 		
-		throw new NotImplementedException();
+		return matrix;
 	}
 	
 	// TODO: NOT TESTED
@@ -913,6 +915,7 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 		
 		throw new NotImplementedException();
 	}
+	*/
 	
 	// ALGORITHMS
 	
@@ -1160,7 +1163,6 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	 * Detect if there is at least one cycle in the graph.
 	 * @return Return {@code true} if there is at least one cycle, {@code false} if there is no cycle.
 	 */
-	// TODO: NOT TESTED
 	public boolean detectCycle() {
 		LinkedHashMap<Vertex<V>, Integer> inDegree = new LinkedHashMap<>();
 		Lexicon<Vertex<V>> F = new LexiconBuilder<Vertex<V>>()

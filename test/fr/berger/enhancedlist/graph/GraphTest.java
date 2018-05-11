@@ -2,9 +2,11 @@ package fr.berger.enhancedlist.graph;
 
 import fr.berger.arrow.Ref;
 import fr.berger.enhancedlist.Couple;
+import fr.berger.enhancedlist.Point;
 import fr.berger.enhancedlist.algorithm.Dijkstra;
 import fr.berger.enhancedlist.graph.builder.VertexBuilder;
 import fr.berger.enhancedlist.lexicon.Lexicon;
+import fr.berger.enhancedlist.matrix.Matrix;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -875,6 +877,36 @@ class GraphTest {
 		assertEquals(new Lexicon<>(), gReflexive.getBridges());
 	}
 	
+	/*
+	@Test
+	void test_toMatrix() {
+		Matrix<Integer> matrix = g1.toMatrix();
+		System.out.println("GraphTest.test_toMatrix> matrix = ");
+		System.out.println(matrix.toString());
+		
+		assertEquals(new Point(g1.getVertices().size(), g1.getVertices().size()), matrix.size());
+		// First line (vertex 1)
+		assertEquals(0, matrix.get(0, 0).intValue());
+		assertEquals(1, matrix.get(1, 0).intValue());
+		assertEquals(1, matrix.get(2, 0).intValue());
+		assertEquals(0, matrix.get(3, 0).intValue());
+		// Second line (vertex 2)
+		assertEquals(0, matrix.get(0, 1).intValue());
+		assertEquals(0, matrix.get(1, 1).intValue());
+		assertEquals(0, matrix.get(2, 1).intValue());
+		assertEquals(1, matrix.get(3, 1).intValue());
+		// Third line (vertex 3)
+		assertEquals(0, matrix.get(0, 2).intValue());
+		assertEquals(2, matrix.get(1, 2).intValue());
+		assertEquals(0, matrix.get(2, 2).intValue());
+		assertEquals(0, matrix.get(3, 2).intValue());
+		// Fourth line (vertex 4)
+		assertEquals(0, matrix.get(0, 3).intValue());
+		assertEquals(0, matrix.get(1, 3).intValue());
+		assertEquals(1, matrix.get(2, 3).intValue());
+		assertEquals(1, matrix.get(3, 3).intValue());
+	}*/
+	
 	@Test
 	void test_breadthFirstSearch() {
 		LinkedHashMap<Vertex<Integer>, Integer> map = gBreadth.breadthFirstSearch(vga, new Function<Couple<Vertex<Integer>, Integer>, Void>() {
@@ -927,6 +959,22 @@ class GraphTest {
 		assertEquals(7, vgi.getData().intValue());
 		assertEquals(8, vga.getData().intValue());
 		assertEquals(0, vgd.getData().intValue());
+	}
+	
+	@Test
+	void test_detectCycle() {
+		assertTrue(g1.detectCycle());
+		assertTrue(g2.detectCycle());
+		assertTrue(gSym.detectCycle());
+		assertTrue(gReflexive.detectCycle());
+		assertTrue(gComplete.detectCycle());
+		assertTrue(gBreadth.detectCycle());
+		
+		assertFalse(gAntiSym.detectCycle());
+		assertFalse(gAntiSymSym.detectCycle());
+		assertFalse(gTransitive.detectCycle());
+		assertFalse(gNotComplete.detectCycle());
+		assertFalse(gNCo.detectCycle());
 	}
 	
 	@Test

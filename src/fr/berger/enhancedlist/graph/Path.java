@@ -149,7 +149,6 @@ public class Path<T> extends Lexicon<Edge<T>> implements Serializable, Cloneable
 		return !isClosed();
 	}
 	
-	@SuppressWarnings("Duplicates") // Duplicates from SimplePath.java (deprecated)
 	public boolean areThereDuplicates() {
 		for (int i = 0, maxi = size(); i < maxi; i++) {
 			for (int j = 0, maxj = size(); j < maxj; j++) {

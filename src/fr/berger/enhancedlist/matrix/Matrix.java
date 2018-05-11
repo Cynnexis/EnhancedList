@@ -18,6 +18,7 @@ public class Matrix<T> implements Serializable {
 	private ArrayList<ArrayList<T>> matrix = null;
 	private int nbColumns = 0;
 	private int nbRows = 0;
+	
 	/**
 	 * The listener of the matrix. It cannot be null.
 	 */
