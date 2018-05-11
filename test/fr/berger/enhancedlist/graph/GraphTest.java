@@ -862,6 +862,13 @@ class GraphTest {
 	}
 	
 	@Test
+	void test_getArticulationPoints() {
+		assertEquals(new Lexicon<>(v2e), g2.getArticulationPoints());
+		assertEquals(new Lexicon<>(), g1.getArticulationPoints());
+		assertEquals(new Lexicon<>(), gReflexive.getArticulationPoints());
+	}
+	
+	@Test
 	void test_breadthFirstSearch() {
 		LinkedHashMap<Vertex<Integer>, Integer> map = gBreadth.breadthFirstSearch(vga, new Function<Couple<Vertex<Integer>, Integer>, Void>() {
 			@Override

@@ -771,8 +771,59 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	 * @return A list of all articulation points in the graph.
 	 */
 	// TODO: NOT TESTED
+	@NotNull
 	public Lexicon<Vertex<V>> getArticulationPoints() {
-		throw new NotImplementedException();
+		Lexicon<Vertex<V>> articulationPoints = new LexiconBuilder<Vertex<V>>()
+				.setAcceptNullValues(false)
+				.setAcceptDuplicates(false)
+				.createLexicon();
+		
+		// "degrees" map all vertices to a connectivity degree in a graph without this vertex.
+		LinkedHashMap<String, Long> degrees = new LinkedHashMap<>();
+		
+		for (int i = 0, maxi = getVertices().size(); i < maxi; i++) {
+			Vertex<V> vi = getVertices().get(i);
+			
+			// Create a graph without the vertex "vi"
+			Graph<V, E> g = new Graph<>(isOriented());
+			Lexicon<Vertex<V>> vertices = new LexiconBuilder<Vertex<V>>()
+					.setAcceptNullValues(false)
+					.setAcceptDuplicates(false)
+					.createLexicon();
+			Lexicon<Edge<E>> edges = new LexiconBuilder<Edge<E>>()
+					.setAcceptNullValues(false)
+					.setAcceptDuplicates(false)
+					.createLexicon();
+			
+			for (Vertex<V> v : getVertices())
+				if (!Objects.equals(v, vi))
+					vertices.add(v);
+			
+			for (Edge<E> e : getEdges())
+				if (!Objects.equals(e.getX(), vi) && !Objects.equals(e.getY(), vi))
+					edges.add(e);
+			
+			g.setVertices(vertices);
+			g.setEdges(edges);
+			
+			// Get the connectivity degree
+			degrees.put(vi.getId().toString(), g.getConnectivityDegree());
+		}
+		
+		// Now that all degrees have been computed, search the maximum
+		long maxDegree = 0;
+		for (Map.Entry<String, Long> entry : degrees.entrySet()) {
+			if (maxDegree < entry.getValue())
+				maxDegree = entry.getValue();
+		}
+		
+		// Now, construct "articulationPoints" from "maxDegree" and "degrees"
+		if (maxDegree > 1)
+			for (Map.Entry<String, Long> entry : degrees.entrySet())
+				if (entry.getValue() == maxDegree)
+					articulationPoints.add(searchVertexFromId(entry.getKey()));
+		
+		return articulationPoints;
 	}
 	
 	/**
@@ -780,6 +831,7 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	 * @return A list of all bridges in the graph.
 	 */
 	// TODO: NOT TESTED
+	@NotNull
 	public Lexicon<Edge<E>> getBridges() {
 		throw new NotImplementedException();
 	}
@@ -789,6 +841,7 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	 * @return The matrix.
 	 */
 	// TODO: NOT TESTED
+	@NotNull
 	public Matrix<Integer> toMatrix() {
 		Matrix<Integer> matrix = new Matrix<>(getN(), getN(), 0);
 		
@@ -847,7 +900,7 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	
 	@SuppressWarnings("ConstantConditions")
 	@NotNull
-	public LinkedHashMap<Vertex<V>, Long> mapDistanceFrom(@NotNull Vertex<V> source, boolean regardingOrientation) {
+	public synchronized LinkedHashMap<Vertex<V>, Long> mapDistanceFrom(@NotNull Vertex<V> source, boolean regardingOrientation) {
 		if (source == null)
 			throw new NullPointerException();
 		
