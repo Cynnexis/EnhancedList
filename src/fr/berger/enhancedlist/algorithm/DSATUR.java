@@ -13,6 +13,14 @@ import java.util.LinkedHashMap;
 
 public class DSATUR implements ColorInterface {
 	
+	/*
+	In case that the algorithm does not work, here some documentation:
+	https://github.com/shanthu89/AdvancedAlgorithms/blob/master/Graph.java
+	https://fr.wikipedia.org/wiki/DSATUR
+	https://pdfs.semanticscholar.org/49f3/dee3335006aed09942ec5f472f278548b6fd.pdf
+	https://imada.sdu.dk/~marco/Teaching/AY2014-2015/DM841/Slides/dm841-lec13.pdf
+	 */
+	
 	/**
 	 * Map all vertices of {@code graph}.
 	 *
