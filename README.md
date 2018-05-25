@@ -27,6 +27,9 @@
 |Connected Graph|Graphe Connexe|Graph every vertices are connected to each other|
 |Breadth-First Search|Parcours en Largeur||
 |Depth-First Search|Parcours en Profondeur||
+|Graph Coloring|Coloration de Graph|Coloring the vertices or edges of a graph, respecting a set of rules|
+|Chromatic Number|Nombre Chromatique|Number of vertex colors in a graph|
+|Chromatic Index|Indice Chromatique|Number of edge colors in a graph|
 
 
 

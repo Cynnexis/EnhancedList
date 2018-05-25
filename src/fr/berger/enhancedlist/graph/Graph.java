@@ -4,6 +4,7 @@ import fr.berger.arrow.Ref;
 import fr.berger.beyondcode.util.EnhancedObservable;
 import fr.berger.enhancedlist.Couple;
 import fr.berger.enhancedlist.algorithm.Dijkstra;
+import fr.berger.enhancedlist.algorithm.WelshPowell;
 import fr.berger.enhancedlist.lexicon.Lexicon;
 import fr.berger.enhancedlist.lexicon.LexiconBuilder;
 import org.jetbrains.annotations.NotNull;
@@ -1258,6 +1259,72 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 		return topo;
 	}
 	
+	// TODO: NOT TESTED
+	public void color() {
+		LinkedHashMap<Vertex<V>, Color> wp = WelshPowell.map(this);
+		
+		for (Map.Entry<Vertex<V>, Color> entry : wp.entrySet())
+			entry.getKey().setColor(entry.getValue());
+	}
+	
+	/**
+	 * Return the chromatic number (a.k.a. the number of vertex colors in the graph).
+	 * @return Return the chromatic number of the graph. If it is not colored, return -1.
+	 */
+	// TODO: NOT TESTED
+	public long getChromaticNumber() {
+		// Search for a not-colored vertex
+		boolean black = false;
+		for (Vertex<V> vertex : getVertices()) {
+			if (vertex.getColor() == null)
+				black = true;
+			else if (vertex.getColor().getColorNumber() > 0)
+				black = true;
+		}
+		
+		if (black)
+			return -1;
+		
+		Lexicon<Color> colors = new LexiconBuilder<Color>()
+				.setAcceptDuplicates(false)
+				.setAcceptNullValues(false)
+				.createLexicon();
+		
+		for (Vertex<V> vertex : getVertices())
+			colors.add(vertex.getColor());
+		
+		return colors.size();
+	}
+	
+	/**
+	 * Return the chromatic index (a.k.a. the number of edge colors in the graph).
+	 * @return Return the chromatic index of the graph. If it is not colored, return -1.
+	 */
+	// TODO: NOT TESTED
+	public long getChromaticIndex() {
+		// Search for a not-colored edge
+		boolean black = false;
+		for (Edge<E> edge : getEdges()) {
+			if (edge.getColor() == null)
+				black = true;
+			else if (edge.getColor().getColorNumber() > 0)
+				black = true;
+		}
+		
+		if (black)
+			return -1;
+		
+		Lexicon<Color> colors = new LexiconBuilder<Color>()
+				.setAcceptDuplicates(false)
+				.setAcceptNullValues(false)
+				.createLexicon();
+		
+		for (Edge<E> edge : getEdges())
+			colors.add(edge.getColor());
+		
+		return colors.size();
+	}
+	
 	/* GETTERS & SETTERS */
 	
 	/**
@@ -1457,16 +1524,23 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 			if (vertex != null) {
 				builder.append("\tVertex{")
 						.append("label=\"")
-						.append(vertex.getLabel())
-						.append("\", id=\"")
-						.append(vertex.getId())
-						.append("\"");
+						.append(vertex.getLabel());
 				
 				if (vertex.getData() != null) {
 					builder.append(", data=\"")
 							.append(vertex.getData())
 							.append("\"");
 				}
+				
+				if (vertex.getColor() != null && vertex.getColor().getColorNumber() != -1) {
+					builder.append(", color=\"")
+							.append(vertex.getColor().toString())
+							.append("\"");
+				}
+				
+				builder.append(", id=\"")
+						.append(vertex.getId())
+						.append("\"");
 				
 				builder.append("}\n");
 			}

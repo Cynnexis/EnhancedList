@@ -74,8 +74,6 @@ public class Color extends EnhancedObservable implements Serializable, Cloneable
 	
 	@Override
 	public String toString() {
-		return "Color{" +
-				"colorNumber=" + colorNumber +
-				'}';
+		return Long.toString(colorNumber);
 	}
 }

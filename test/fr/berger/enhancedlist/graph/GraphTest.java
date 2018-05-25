@@ -4,6 +4,7 @@ import fr.berger.arrow.Ref;
 import fr.berger.enhancedlist.Couple;
 import fr.berger.enhancedlist.Point;
 import fr.berger.enhancedlist.algorithm.Dijkstra;
+import fr.berger.enhancedlist.algorithm.WelshPowell;
 import fr.berger.enhancedlist.graph.builder.VertexBuilder;
 import fr.berger.enhancedlist.lexicon.Lexicon;
 import fr.berger.enhancedlist.matrix.Matrix;
@@ -173,6 +174,10 @@ class GraphTest {
 	Edge<Void> eg14;
 	Edge<Void> eg15;
 	Graph<Integer, Void> gBreadth;
+	
+	/* CLAROLINE GRAPHS */
+	// crown10
+	Graph<Object, Object> crown10;
 	
 	@BeforeEach
 	void setup() {
@@ -423,6 +428,11 @@ class GraphTest {
 		), new Lexicon<>(
 				eg1, eg2, eg3, eg4, eg5, eg6, eg7, eg8, eg9, eg10, eg11, eg12, eg13, eg14, eg15
 		));
+		
+		/* CLAROLINE GRAPHS */
+		
+		// crown10
+		crown10 = GraphIO.read("res/crown10.txt");
 	}
 	
 	@AfterEach
@@ -975,6 +985,48 @@ class GraphTest {
 		assertFalse(gTransitive.detectCycle());
 		assertFalse(gNotComplete.detectCycle());
 		assertFalse(gNCo.detectCycle());
+	}
+	
+	@Test
+	void test_WelshPowell() {
+		LinkedHashMap<Vertex<Object>, Color> wp = WelshPowell.map(g1);
+		
+		System.out.println("GraphTest.test_WelshPowell> wp = {");
+		for (Map.Entry<Vertex<Object>, Color> entry : wp.entrySet()) {
+			System.out.println("\t" + entry.getKey().getLabel() + " -> " + entry.getValue().getColorNumber());
+		}
+		System.out.println("}");
+		
+		
+		wp = WelshPowell.map(crown10);
+		
+		System.out.println("GraphTest.test_WelshPowell> crown10 = {");
+		for (Map.Entry<Vertex<Object>, Color> entry : wp.entrySet()) {
+			System.out.println("\t" + entry.getKey().getLabel() + " -> " + entry.getValue().getColorNumber());
+		}
+		System.out.println("}");
+	}
+	
+	@Test
+	void test_color() {
+		crown10.color();
+		System.out.println("GraphTest.test_color> crown10 = " + crown10);
+	}
+	
+	@Test
+	void test_getChromaticNumber() {
+		g1.color();
+		assertEquals(3, g1.getChromaticNumber());
+		
+		crown10.color();
+		System.out.println("GraphTest.test_getChromaticNumber> crown10 = " + crown10.getChromaticNumber());
+	}
+	
+	@Test
+	void test_getChromaticIndex() {
+		assertEquals(-1, g1.getChromaticIndex());
+		
+		System.out.println("GraphTest.test_getChromaticIndex> crown10 = " + crown10.getChromaticIndex());
 	}
 	
 	@Test
