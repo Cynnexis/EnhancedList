@@ -12,6 +12,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -177,7 +178,12 @@ class GraphTest {
 	
 	/* CLAROLINE GRAPHS */
 	// crown10
-	Graph<Object, Object> crown10;
+	Graph<Object, Object> queen5;
+	Graph<Object, Object> queen7;
+	Graph<Object, Object> queen9;
+	Graph<Object, Object> queen11;
+	Graph<Object, Object> queen13;
+	Graph<Object, Object> queen15;
 	
 	@BeforeEach
 	void setup() {
@@ -432,7 +438,12 @@ class GraphTest {
 		/* CLAROLINE GRAPHS */
 		
 		// crown10
-		crown10 = GraphIO.read("res/crown10.txt");
+		queen5 = GraphIO.read("res/queen5_5.txt");
+		queen7 = GraphIO.read("res/queen7_7.txt");
+		queen9 = GraphIO.read("res/queen9_9.txt");
+		queen11 = GraphIO.read("res/queen11_11.txt");
+		queen13 = GraphIO.read("res/queen13_13.txt");
+		queen15 = GraphIO.read("res/queen15_15.txt");
 	}
 	
 	@AfterEach
@@ -463,10 +474,20 @@ class GraphTest {
 	
 	@Test
 	void test_getNeighbors() {
+		/* VERTICES */
 		assertTrue(g1.getNeighbors(v11).containsAll(v12, v13));
 		assertTrue(g1.getNeighbors(v12).containsAll(v13, v13, v14));
 		assertTrue(g1.getNeighbors(v13).containsAll(v11, v12, v14));
 		assertTrue(g1.getNeighbors(v14).containsAll(v12, v13, v14));
+		
+		/* EDGES */
+		assertTrue(g1.getNeighbors(e11).containsAll(e12, e13, e15, e16));
+		assertTrue(g1.getNeighbors(e12).containsAll(e11, e14, e15, e16));
+		assertTrue(g1.getNeighbors(e13).containsAll(e11, e14, e15, e16, e17));
+		assertTrue(g1.getNeighbors(e14).containsAll(e12, e13, e15, e16, e17));
+		assertTrue(g1.getNeighbors(e15).containsAll(e11, e12, e13, e14, e16));
+		assertTrue(g1.getNeighbors(e16).containsAll(e11, e12, e13, e14, e15));
+		assertTrue(g1.getNeighbors(e17).containsAll(e13, e14));
 	}
 	
 	@Test
@@ -988,8 +1009,91 @@ class GraphTest {
 	}
 	
 	@Test
+	void test_areVerticesColored() {
+		assertFalse(g1.areVerticesColored());
+		v11.setColor(new Color(-1));
+		assertFalse(g1.areVerticesColored());
+		v11.setColor(new Color(0));
+		assertFalse(g1.areVerticesColored());
+		v11.setColor(new Color(3));
+		assertTrue(g1.areVerticesColored());
+	}
+	
+	@Test
+	void test_areEdgesColored() {
+		assertFalse(g1.areEdgesColored());
+		e11.setColor(new Color(-1));
+		assertFalse(g1.areEdgesColored());
+		e11.setColor(new Color(0));
+		assertFalse(g1.areEdgesColored());
+		e11.setColor(new Color(3));
+		assertTrue(g1.areEdgesColored());
+	}
+	
+	@Test
+	void test_areVerticesEntirelyColored() {
+		assertFalse(g1.areVerticesEntirelyColored());
+		v11.setColor(new Color(3));
+		assertFalse(g1.areVerticesEntirelyColored());
+		
+		for (Vertex<Object> v : g1.getVertices())
+			v.setColor(new Color(-1));
+		assertFalse(g1.areVerticesEntirelyColored());
+		
+		for (Vertex<Object> v : g1.getVertices())
+			v.setColor(new Color(0));
+		assertFalse(g1.areVerticesEntirelyColored());
+		
+		for (Vertex<Object> v : g1.getVertices())
+			v.setColor(new Color(1));
+		assertTrue(g1.areVerticesEntirelyColored());
+	}
+	
+	@Test
+	void test_areEdgesEntirelyColored() {
+		assertFalse(g1.areEdgesEntirelyColored());
+		e11.setColor(new Color(3));
+		assertFalse(g1.areEdgesEntirelyColored());
+		
+		for (Edge<Object> e : g1.getEdges())
+			e.setColor(new Color(-1));
+		assertFalse(g1.areEdgesEntirelyColored());
+		
+		for (Edge<Object> e : g1.getEdges())
+			e.setColor(new Color(0));
+		assertFalse(g1.areEdgesEntirelyColored());
+		
+		for (Edge<Object> e : g1.getEdges())
+			e.setColor(new Color(1));
+		assertTrue(g1.areEdgesEntirelyColored());
+	}
+	
+	@Test
+	void test_getSaturatedDegree() {
+		assertEquals(0, g1.getSaturatedDegree(v11));
+		assertEquals(0, g1.getSaturatedDegree(v12));
+		assertEquals(0, g1.getSaturatedDegree(v13));
+		assertEquals(0, g1.getSaturatedDegree(v14));
+		
+		v12.setColor(new Color(1));
+		assertEquals(1, g1.getSaturatedDegree(v11));
+		assertEquals(0, g1.getSaturatedDegree(v12));
+		assertEquals(1, g1.getSaturatedDegree(v13));
+		assertEquals(1, g1.getSaturatedDegree(v14));
+		
+		v13.setColor(new Color(2));
+		v11.setColor(new Color(3));
+		v14.setColor(new Color(3));
+		
+		assertEquals(2, g1.getSaturatedDegree(v11));
+		assertEquals(2, g1.getSaturatedDegree(v12));
+		assertEquals(2, g1.getSaturatedDegree(v13));
+		assertEquals(3, g1.getSaturatedDegree(v14)); // v14 is a neighbor of v14 (reflexivity)
+	}
+	
+	@Test
 	void test_WelshPowell() {
-		LinkedHashMap<Vertex<Object>, Color> wp = WelshPowell.map(g1);
+		LinkedHashMap<Vertex<Object>, Color> wp = new WelshPowell().mapVertices(g1);
 		
 		System.out.println("GraphTest.test_WelshPowell> wp = {");
 		for (Map.Entry<Vertex<Object>, Color> entry : wp.entrySet()) {
@@ -998,9 +1102,9 @@ class GraphTest {
 		System.out.println("}");
 		
 		
-		wp = WelshPowell.map(crown10);
+		wp = new WelshPowell().mapVertices(queen5);
 		
-		System.out.println("GraphTest.test_WelshPowell> crown10 = {");
+		System.out.println("GraphTest.test_WelshPowell> queen5 = {");
 		for (Map.Entry<Vertex<Object>, Color> entry : wp.entrySet()) {
 			System.out.println("\t" + entry.getKey().getLabel() + " -> " + entry.getValue().getColorNumber());
 		}
@@ -1009,8 +1113,9 @@ class GraphTest {
 	
 	@Test
 	void test_color() {
-		crown10.color();
-		System.out.println("GraphTest.test_color> crown10 = " + crown10);
+		queen5.color();
+		System.out.println("GraphTest.test_color> queen5 = " + queen5);
+		throw new NotImplementedException();
 	}
 	
 	@Test
@@ -1018,15 +1123,17 @@ class GraphTest {
 		g1.color();
 		assertEquals(3, g1.getChromaticNumber());
 		
-		crown10.color();
-		System.out.println("GraphTest.test_getChromaticNumber> crown10 = " + crown10.getChromaticNumber());
+		queen5.color();
+		System.out.println("GraphTest.test_getChromaticNumber> queen5 = " + queen5.getChromaticNumber());
 	}
 	
 	@Test
 	void test_getChromaticIndex() {
 		assertEquals(-1, g1.getChromaticIndex());
 		
-		System.out.println("GraphTest.test_getChromaticIndex> crown10 = " + crown10.getChromaticIndex());
+		System.out.println("GraphTest.test_getChromaticIndex> queen5 = " + queen5.getChromaticIndex());
+		
+		throw new NotImplementedException();
 	}
 	
 	@Test

@@ -9,6 +9,7 @@ import fr.berger.enhancedlist.lexicon.Lexicon;
 import fr.berger.enhancedlist.lexicon.LexiconBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -161,11 +162,23 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	}
 	@SuppressWarnings("ConstantConditions")
 	@NotNull
-	public Lexicon<Vertex<V>> getNeighbors(@NotNull Ref<Vertex<V>> vertex) {
-		if (vertex == null)
+	public Lexicon<Edge<E>> getNeighbors(@NotNull Edge<E> edge) {
+		if (edge == null)
 			throw new NullPointerException();
 		
-		return getNeighbors(vertex.getElement());
+		if (!getEdges().contains(edge))
+			throw new IllegalArgumentException();
+		
+		Lexicon<Edge<E>> neighbors = new LexiconBuilder<Edge<E>>()
+				.setAcceptNullValues(false)
+				.setAcceptDuplicates(true)
+				.createLexicon();
+		
+		for (Edge<E> e : getEdges())
+			if (!edge.equals(e) && areAdjacent(edge, e))
+				neighbors.add(e);
+		
+		return neighbors;
 	}
 	
 	/**
@@ -1259,9 +1272,89 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 		return topo;
 	}
 	
+	/**
+	 * Tell if the graph contains at least one colored vertex in the graph.
+	 * @return Return {@code true} if there is at least one colored vertex in the graph, {@code false} otherwise.
+	 */
+	public boolean areVerticesColored() {
+		for (Vertex<V> vertex : getVertices())
+			if (vertex.getColor() != null && vertex.getColor().getColorNumber() > 0)
+				return true;
+		
+		return false;
+	}
+	
+	/**
+	 * Tell if the graph contains at least one colored edge in the graph.
+	 * @return Return {@code true} if there is at least one colored edge in the graph, {@code false} otherwise.
+	 */
+	public boolean areEdgesColored() {
+		for (Edge<E> edge : getEdges())
+			if (edge.getColor() != null && edge.getColor().getColorNumber() > 0)
+				return true;
+		
+		return false;
+	}
+	
+	/**
+	 * Tell if all vertices in the graph are colored.
+	 * @return Return {@code true} all vertices in the graph are colored, else return {@code false} if at least one
+	 * vertex is not colored.
+	 */
+	public boolean areVerticesEntirelyColored() {
+		boolean black = false;
+		for (int i = 0, maxi = getVertices().size(); i < maxi && !black; i++) {
+			Vertex<V> vertex = getVertices().get(i);
+			
+			if (vertex.getColor() == null || (vertex.getColor() != null && vertex.getColor().getColorNumber() <= 0))
+				black = true;
+		}
+		
+		return !black;
+	}
+	
+	/**
+	 * Tell if all edges in the graph are colored.
+	 * @return Return {@code true} all edges in the graph are colored, else return {@code false} if at least one
+	 * edge is not colored.
+	 */
+	public boolean areEdgesEntirelyColored() {
+		boolean black = false;
+		for (int i = 0, maxi = getEdges().size(); i < maxi && !black; i++) {
+			Edge<E> edge = getEdges().get(i);
+			
+			if (edge.getColor() == null || (edge.getColor() != null && edge.getColor().getColorNumber() <= 0))
+				black = true;
+		}
+		
+		return !black;
+	}
+	
+	/**
+	 * Compute the saturated degree of the given vertex.
+	 * The saturated degree is the number of different color that the neighbors of {@code vertex} wear. The neighbors
+	 * that does not contain any color, or their color number is less or equal to 0 are not count.
+	 * @param vertex The vertex
+	 * @return Return the saturated degree. If the graph is not colored, return 0.
+	 */
+	public int getSaturatedDegree(@NotNull Vertex<V> vertex) {
+		// colors only accept values that are not already in it. It will counts the number of colored neighbors
+		Lexicon<Color> colors = new LexiconBuilder<Color>()
+				.setAcceptNullValues(false)
+				.setAcceptDuplicates(false)
+				.createLexicon();
+		
+		Lexicon<Vertex<V>> neighbors = getNeighbors(vertex);
+		for (Vertex<V> neighbor : neighbors)
+			if (neighbor.getColor() != null && neighbor.getColor().getColorNumber() > 0)
+				colors.add(neighbor.getColor());
+		
+		return colors.size();
+	}
+	
 	// TODO: NOT TESTED
 	public void color() {
-		LinkedHashMap<Vertex<V>, Color> wp = WelshPowell.map(this);
+		LinkedHashMap<Vertex<V>, Color> wp = new WelshPowell().mapVertices(this);
 		
 		for (Map.Entry<Vertex<V>, Color> entry : wp.entrySet())
 			entry.getKey().setColor(entry.getValue());
@@ -1269,20 +1362,12 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	
 	/**
 	 * Return the chromatic number (a.k.a. the number of vertex colors in the graph).
-	 * @return Return the chromatic number of the graph. If it is not colored, return -1.
+	 * @return Return the chromatic number of the graph. If it is not entirely colored, return -1.
 	 */
 	// TODO: NOT TESTED
 	public long getChromaticNumber() {
 		// Search for a not-colored vertex
-		boolean black = false;
-		for (Vertex<V> vertex : getVertices()) {
-			if (vertex.getColor() == null)
-				black = true;
-			else if (vertex.getColor().getColorNumber() > 0)
-				black = true;
-		}
-		
-		if (black)
+		if (!areVerticesEntirelyColored())
 			return -1;
 		
 		Lexicon<Color> colors = new LexiconBuilder<Color>()
@@ -1291,7 +1376,8 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 				.createLexicon();
 		
 		for (Vertex<V> vertex : getVertices())
-			colors.add(vertex.getColor());
+			if (vertex.getColor() != null && vertex.getColor().getColorNumber() > 0)
+				colors.add(vertex.getColor());
 		
 		return colors.size();
 	}
@@ -1303,15 +1389,7 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	// TODO: NOT TESTED
 	public long getChromaticIndex() {
 		// Search for a not-colored edge
-		boolean black = false;
-		for (Edge<E> edge : getEdges()) {
-			if (edge.getColor() == null)
-				black = true;
-			else if (edge.getColor().getColorNumber() > 0)
-				black = true;
-		}
-		
-		if (black)
+		if (!areVerticesEntirelyColored())
 			return -1;
 		
 		Lexicon<Color> colors = new LexiconBuilder<Color>()
@@ -1320,7 +1398,8 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 				.createLexicon();
 		
 		for (Edge<E> edge : getEdges())
-			colors.add(edge.getColor());
+			if (edge.getColor() != null && edge.getColor().getColorNumber() > 0)
+				colors.add(edge.getColor());
 		
 		return colors.size();
 	}
@@ -1582,3 +1661,8 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 		return builder.toString();
 	}
 }
+
+/**
+ * See beyond the main task (go and fetch some real problem)
+ * Go to slide 13 of the course to find a link to more example
+ */

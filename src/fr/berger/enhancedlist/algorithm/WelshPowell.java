@@ -10,10 +10,11 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 
-public class WelshPowell {
+public class WelshPowell implements ColorInterface {
 	
 	@SuppressWarnings("ConstantConditions")
-	public static <V, E> LinkedHashMap<Vertex<V>, Color> map(@NotNull Graph<V, E> graph) {
+	@Override
+	public <V, E> LinkedHashMap<Vertex<V>, Color> mapVertices(@NotNull Graph<V, E> graph) {
 		if (graph == null)
 			throw new NullPointerException();
 		
@@ -24,12 +25,7 @@ public class WelshPowell {
 				.addAll(graph.getVertices())
 				.createLexicon();
 		
-		L.sort(new Comparator<Vertex<V>>() {
-			@Override
-			public int compare(Vertex<V> v1, Vertex<V> v2) {
-				return graph.getDegree(v2) - graph.getDegree(v1);
-			}
-		});
+		L.sort((v1, v2) -> graph.getDegree(v2) - graph.getDegree(v1));
 		
 		long k = 1;
 		

@@ -17,7 +17,8 @@ import java.util.Objects;
 public class Color extends EnhancedObservable implements Serializable, Cloneable {
 	
 	/**
-	 * The color of the vertex/edge. If it is equal to -1, it means that the vertex/edge has not been colored yet
+	 * The color of the vertex/edge. If it is equal to -1, it means that the vertex/edge has not been colored yet.
+	 * This number must be greater than zero.
 	 */
 	private long colorNumber;
 	
