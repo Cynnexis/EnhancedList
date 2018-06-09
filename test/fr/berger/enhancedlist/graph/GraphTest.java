@@ -3,15 +3,14 @@ package fr.berger.enhancedlist.graph;
 import fr.berger.arrow.Ref;
 import fr.berger.enhancedlist.Couple;
 import fr.berger.enhancedlist.Point;
+import fr.berger.enhancedlist.algorithm.ColorInterface;
 import fr.berger.enhancedlist.algorithm.Dijkstra;
 import fr.berger.enhancedlist.algorithm.WelshPowell;
 import fr.berger.enhancedlist.graph.builder.VertexBuilder;
 import fr.berger.enhancedlist.lexicon.Lexicon;
 import fr.berger.enhancedlist.matrix.Matrix;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.*;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.LinkedHashMap;
@@ -21,6 +20,7 @@ import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GraphTest {
 	
 	// g1
@@ -177,13 +177,24 @@ class GraphTest {
 	Graph<Integer, Void> gBreadth;
 	
 	/* CLAROLINE GRAPHS */
-	// crown10
-	Graph<Object, Object> queen5;
-	Graph<Object, Object> queen7;
-	Graph<Object, Object> queen9;
-	Graph<Object, Object> queen11;
-	Graph<Object, Object> queen13;
-	Graph<Object, Object> queen15;
+	// The first one must not be changed, the second must be used in test
+	Graph<Object, Object> queen5, q5;
+	Graph<Object, Object> queen7, q7;
+	Graph<Object, Object> queen9, q9;
+	Graph<Object, Object> queen11, q11;
+	Graph<Object, Object> queen13, q13;
+	Graph<Object, Object> queen15, q15;
+	
+	@BeforeAll
+	void setupOnce() {
+		/* CLAROLINE GRAPHS */
+		queen5 = GraphIO.read("res/queen5_5.txt");
+		queen7 = GraphIO.read("res/queen7_7.txt");
+		queen9 = GraphIO.read("res/queen9_9.txt");
+		queen11 = GraphIO.read("res/queen11_11.txt");
+		queen13 = GraphIO.read("res/queen13_13.txt");
+		queen15 = GraphIO.read("res/queen15_15.txt");
+	}
 	
 	@BeforeEach
 	void setup() {
@@ -437,13 +448,12 @@ class GraphTest {
 		
 		/* CLAROLINE GRAPHS */
 		
-		// crown10
-		queen5 = GraphIO.read("res/queen5_5.txt");
-		queen7 = GraphIO.read("res/queen7_7.txt");
-		queen9 = GraphIO.read("res/queen9_9.txt");
-		queen11 = GraphIO.read("res/queen11_11.txt");
-		queen13 = GraphIO.read("res/queen13_13.txt");
-		queen15 = GraphIO.read("res/queen15_15.txt");
+		q5 = queen5;
+		q7 = queen7;
+		q9 = queen9;
+		q11 = queen11;
+		q13 = queen13;
+		q15 = queen15;
 	}
 	
 	@AfterEach
@@ -1092,46 +1102,81 @@ class GraphTest {
 	}
 	
 	@Test
-	void test_WelshPowell() {
-		LinkedHashMap<Vertex<Object>, Color> wp = new WelshPowell().mapVertices(g1);
+	void test_WelshPowellAscending() {
+		test_WelshPowell(new WelshPowell.WelshPowellAscending());
+	}
+	
+	@Test
+	void test_WelshPowellDescending() {
+		test_WelshPowell(new WelshPowell.WelshPowellDescending());
+	}
+	
+	private void test_WelshPowell(@NotNull ColorInterface c) {
+		if (!(c instanceof WelshPowell.WelshPowellAscending) && !(c instanceof WelshPowell.WelshPowellDescending))
+			throw new IllegalArgumentException();
 		
-		System.out.println("GraphTest.test_WelshPowell> wp = {");
-		for (Map.Entry<Vertex<Object>, Color> entry : wp.entrySet()) {
+		String name = c.getClass().getSimpleName();
+		
+		LinkedHashMap<Vertex<Object>, Color> wp = c.mapVertices(g1);
+		
+		System.out.println("GraphTest.test_" + name + "> wp = {");
+		for (Map.Entry<Vertex<Object>, Color> entry : wp.entrySet())
 			System.out.println("\t" + entry.getKey().getLabel() + " -> " + entry.getValue().getColorNumber());
-		}
 		System.out.println("}");
 		
 		
-		wp = new WelshPowell().mapVertices(queen5);
+		wp = new WelshPowell.WelshPowellAscending().mapVertices(q5);
 		
-		System.out.println("GraphTest.test_WelshPowell> queen5 = {");
-		for (Map.Entry<Vertex<Object>, Color> entry : wp.entrySet()) {
+		System.out.println("GraphTest.test_" + name + "> q5 = {");
+		for (Map.Entry<Vertex<Object>, Color> entry : wp.entrySet())
 			System.out.println("\t" + entry.getKey().getLabel() + " -> " + entry.getValue().getColorNumber());
-		}
 		System.out.println("}");
 	}
 	
 	@Test
-	void test_color() {
-		queen5.color();
-		System.out.println("GraphTest.test_color> queen5 = " + queen5);
-		throw new NotImplementedException();
+	void test_colorWPA() {
+		test_color(new WelshPowell.WelshPowellAscending());
 	}
 	
 	@Test
-	void test_getChromaticNumber() {
-		g1.color();
+	void test_colorWPD() {
+		test_color(new WelshPowell.WelshPowellDescending());
+	}
+	
+	void test_color(@NotNull ColorInterface ci) {
+		String name = ci.getClass().getSimpleName();
+		q5.color(new WelshPowell.WelshPowellAscending());
+		System.out.println("GraphTest.test_color" + name + "> q5 = " + q5);
+	}
+	
+	@Test
+	void test_getChromaticNumberWPA() {
+		assertEquals(9, test_getChromaticNumber(new WelshPowell.WelshPowellAscending()));
+	}
+	
+	@Test
+	void test_getChromaticNumberWPD() {
+		assertEquals(7, test_getChromaticNumber(new WelshPowell.WelshPowellDescending()));
+	}
+	
+	@Test
+	long test_getChromaticNumber(@NotNull ColorInterface ci) {
+		String name = ci.getClass().getSimpleName();
+		
+		g1.color(ci);
 		assertEquals(3, g1.getChromaticNumber());
 		
-		queen5.color();
-		System.out.println("GraphTest.test_getChromaticNumber> queen5 = " + queen5.getChromaticNumber());
+		q5.color(ci);
+		System.out.println("GraphTest.test_getChromaticNumber" + name + "> q5 = " + q5.getChromaticNumber());
+		return q5.getChromaticNumber();
 	}
 	
 	@Test
 	void test_getChromaticIndex() {
+		g1.color();
 		assertEquals(-1, g1.getChromaticIndex());
 		
-		System.out.println("GraphTest.test_getChromaticIndex> queen5 = " + queen5.getChromaticIndex());
+		System.out.println("GraphTest.test_getChromaticIndex> q5 = " + q5.getChromaticIndex());
 		
 		throw new NotImplementedException();
 	}

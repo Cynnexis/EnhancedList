@@ -3,6 +3,7 @@ package fr.berger.enhancedlist.graph;
 import fr.berger.arrow.Ref;
 import fr.berger.beyondcode.util.EnhancedObservable;
 import fr.berger.enhancedlist.Couple;
+import fr.berger.enhancedlist.algorithm.ColorInterface;
 import fr.berger.enhancedlist.algorithm.Dijkstra;
 import fr.berger.enhancedlist.algorithm.WelshPowell;
 import fr.berger.enhancedlist.lexicon.Lexicon;
@@ -1353,11 +1354,18 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 	}
 	
 	// TODO: NOT TESTED
-	public void color() {
-		LinkedHashMap<Vertex<V>, Color> wp = new WelshPowell().mapVertices(this);
+	@SuppressWarnings("ConstantConditions")
+	public void color(@NotNull ColorInterface ci) {
+		if (ci == null)
+			throw new NullPointerException();
+		
+		LinkedHashMap<Vertex<V>, Color> wp = ci.mapVertices(this);
 		
 		for (Map.Entry<Vertex<V>, Color> entry : wp.entrySet())
 			entry.getKey().setColor(entry.getValue());
+	}
+	public void color() {
+		color(new WelshPowell.WelshPowellAscending());
 	}
 	
 	/**

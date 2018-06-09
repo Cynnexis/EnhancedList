@@ -14,7 +14,7 @@ import java.util.Objects;
  * number.
  * @author Valentin Berger
  */
-public class Color extends EnhancedObservable implements Serializable, Cloneable {
+public class Color extends EnhancedObservable implements Serializable, Cloneable, Comparable<Color> {
 	
 	/**
 	 * The color of the vertex/edge. If it is equal to -1, it means that the vertex/edge has not been colored yet.
@@ -56,6 +56,13 @@ public class Color extends EnhancedObservable implements Serializable, Cloneable
 	
 	private void readObject(@NotNull ObjectInputStream stream) throws IOException {
 		setColorNumber(stream.readLong());
+	}
+	
+	/* COMPARABLE METHOD */
+	
+	@Override
+	public int compareTo(@NotNull Color o) {
+		return Long.compare(getColorNumber(), o.getColorNumber());
 	}
 	
 	/* OVERRIDES */

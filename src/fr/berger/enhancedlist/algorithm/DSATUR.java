@@ -10,6 +10,7 @@ import sun.awt.image.ImageWatched;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.LinkedHashMap;
+import java.util.Objects;
 
 public class DSATUR implements ColorInterface {
 	
@@ -31,34 +32,41 @@ public class DSATUR implements ColorInterface {
 	@Override
 	public <V, E> LinkedHashMap<Vertex<V>, Color> mapVertices(@NotNull Graph<V, E> graph) {
 		LinkedHashMap<Vertex<V>, Color> colors = new LinkedHashMap<>();
-		Lexicon<Vertex<V>> toColor = new LexiconBuilder<Vertex<V>>()
+		Lexicon<Vertex<V>> L = new LexiconBuilder<Vertex<V>>()
 				.setAcceptDuplicates(false)
 				.setAcceptNullValues(false)
 				.addAll(graph.getVertices())
 				.createLexicon();
 		long k = 1;
 		
-		toColor.sort((v1, v2) -> graph.getDegree(v2) - graph.getDegree(v1));
+		L.sort((v1, v2) -> graph.getDegree(v2) - graph.getDegree(v1));
 		
-		Vertex<V> x = toColor.first();
-		toColor.remove(x);
+		
+		
+		// PRINT L /DEBUG\
+		/*System.out.println("DSATUR.mapVertices> L = {");
+		for (Vertex<V> v : L) {
+			System.out.println("\t" + v + " (degree = " + graph.getDegree(v) + ")");
+		}
+		System.out.println("}");*/
+		
+		Vertex<V> x = L.first();
+		L.remove(x);
 		colors.put(x, new Color(k));
 		
-		while (!toColor.isEmpty()) {
-			// Choose a vertex where the saturation degree is max
-			x = toColor.first();
-			for (int i = 0, maxi = graph.getVertices().size(); i < maxi; i++) {
-				Vertex<V> vi = graph.getVertices().get(i);
-				if (graph.getSaturatedDegree(x) == graph.getSaturatedDegree(vi)) {
-					if (graph.getDegree(x) > graph.getDegree(vi))
+		while (!L.isEmpty()) {
+			// Choose a vertex where the saturation degree is max and the degree is max too
+			x = L.first(); // As L is sorted, x has the higher degree (but maybe not the higher saturation degree)
+			// Search a vertex with the same (or higher) degree, and a higher saturation degree
+			for (int i = 0, maxi = L.size(); i < maxi; i++) {
+				Vertex<V> vi = L.get(i);
+				if (!Objects.equals(x, vi) && graph.getDegree(x) <= graph.getDegree(vi))
+					if (graph.getSaturatedDegree(x) >= graph.getSaturatedDegree(vi))
 						x = vi;
-				}
-				else if (graph.getSaturatedDegree(x) > graph.getSaturatedDegree(vi))
-					x = vi;
 			}
 			
 			// Now, x is the best DSAT vertex, or one of the best with the greatest degree in the graph
-			toColor.remove(x);
+			L.remove(x);
 			colors.put(x, new Color(k));
 			k++;
 		}

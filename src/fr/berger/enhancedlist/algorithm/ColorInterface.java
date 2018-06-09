@@ -9,7 +9,7 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.LinkedHashMap;
 
-/* package */ interface ColorInterface {
+public interface ColorInterface {
 	
 	/**
 	 * Map all vertices of {@code graph}.

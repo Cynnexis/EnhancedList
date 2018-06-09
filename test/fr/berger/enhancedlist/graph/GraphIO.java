@@ -157,8 +157,11 @@ public class GraphIO {
 	
 	@Test
 	public void test_read() {
-		Graph<Object, Object> crown10 = read("res/crown10.txt");
-		System.out.println("GraphIO.test_read> crown10 = " + crown10.toString());
-		System.out.println(crown10.getEdges().size());
+		long start = System.currentTimeMillis();
+		Graph<Object, Object> queen5 = read("res/queen5.txt");
+		long stop = System.currentTimeMillis();
+		System.out.println("GraphIO.test_read> queen5 = " + queen5.toString());
+		System.out.println("GraphIO.test_read> nb of edges: " + queen5.getEdges().size());
+		System.out.println("GraphIO.test_read> Time: " + (stop - start) + "ms");
 	}
 }

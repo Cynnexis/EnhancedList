@@ -264,11 +264,24 @@ public class Vertex<T> extends EnhancedObservable implements Serializable, Clone
 	
 	@Override
 	public String toString() {
-		return "Vertex{" +
-				"id=" + id +
-				", data=" + data +
-				", label='" + label + '\'' +
-				", color=" + color +
-				'}';
+		StringBuilder build = new StringBuilder("Vertex{");
+		build.append("id=")
+				.append(getId())
+				.append(", label='")
+				.append(getLabel())
+				.append('\'');
+		
+		if (getData() != null)
+			build.append(", data='")
+				.append(getData())
+				.append('\'');
+		
+		if (getColor() != null)
+			build.append(", color=")
+				.append(getColor());
+		
+		build.append('}');
+		
+		return build.toString();
 	}
 }

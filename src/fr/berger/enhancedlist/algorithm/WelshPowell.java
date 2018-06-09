@@ -10,23 +10,67 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 
-public class WelshPowell implements ColorInterface {
+public abstract class WelshPowell {
 	
-	@SuppressWarnings("ConstantConditions")
-	@Override
-	public <V, E> LinkedHashMap<Vertex<V>, Color> mapVertices(@NotNull Graph<V, E> graph) {
-		if (graph == null)
-			throw new NullPointerException();
-		
+	public static class WelshPowellAscending implements ColorInterface {
+		@SuppressWarnings("ConstantConditions")
+		@Override
+		public <V, E> LinkedHashMap<Vertex<V>, Color> mapVertices(@NotNull Graph<V, E> graph) {
+			if (graph == null)
+				throw new NullPointerException();
+			
+			Lexicon<Vertex<V>> L = new LexiconBuilder<Vertex<V>>()
+					.setAcceptDuplicates(false)
+					.setAcceptNullValues(false)
+					.addAll(graph.getVertices())
+					.createLexicon();
+			
+			L.sort((v1, v2) -> graph.getDegree(v1) - graph.getDegree(v2));
+			
+			return WelshPowell.map(graph, L);
+		}
+	}
+	
+	public static class WelshPowellDescending implements ColorInterface {
+		@SuppressWarnings("ConstantConditions")
+		@Override
+		public <V, E> LinkedHashMap<Vertex<V>, Color> mapVertices(@NotNull Graph<V, E> graph) {
+			if (graph == null)
+				throw new NullPointerException();
+			
+			Lexicon<Vertex<V>> L = new LexiconBuilder<Vertex<V>>()
+					.setAcceptDuplicates(false)
+					.setAcceptNullValues(false)
+					.addAll(graph.getVertices())
+					.createLexicon();
+			
+			L.sort((v1, v2) -> graph.getDegree(v2) - graph.getDegree(v1));
+			
+			return WelshPowell.map(graph, L);
+		}
+	}
+	
+	public static class WelshPowellRandom implements ColorInterface {
+		@SuppressWarnings("ConstantConditions")
+		@Override
+		public <V, E> LinkedHashMap<Vertex<V>, Color> mapVertices(@NotNull Graph<V, E> graph) {
+			if (graph == null)
+				throw new NullPointerException();
+			
+			Lexicon<Vertex<V>> L = new LexiconBuilder<Vertex<V>>()
+					.setAcceptDuplicates(false)
+					.setAcceptNullValues(false)
+					.addAll(graph.getVertices())
+					.createLexicon();
+			
+			L.disarray();
+			
+			return WelshPowell.map(graph, L);
+		}
+	}
+	
+	private static <V, E> LinkedHashMap<Vertex<V>, Color> map(@NotNull Graph<V, E> graph, @NotNull Lexicon<Vertex<V>> L) {
 		LinkedHashMap<Vertex<V>, Color> colors = new LinkedHashMap<>();
-		Lexicon<Vertex<V>> L = new LexiconBuilder<Vertex<V>>()
-				.setAcceptDuplicates(false)
-				.setAcceptNullValues(false)
-				.addAll(graph.getVertices())
-				.createLexicon();
-		
-		L.sort((v1, v2) -> graph.getDegree(v2) - graph.getDegree(v1));
-		
 		long k = 1;
 		
 		while (!L.isEmpty()) {
