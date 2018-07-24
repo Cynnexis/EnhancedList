@@ -26,6 +26,16 @@ public abstract class Greedy {
 			
 			return Greedy.mapVertices(graph, L);
 		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			return toString().equals(Objects.toString(obj));
+		}
+		
+		@Override
+		public String toString() {
+			return "GreedyAscending{}";
+		}
 	}
 	
 	public static class GreedyDescending implements ColorInterface {
@@ -42,6 +52,16 @@ public abstract class Greedy {
 			
 			return Greedy.mapVertices(graph, L);
 		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			return toString().equals(Objects.toString(obj));
+		}
+		
+		@Override
+		public String toString() {
+			return "GreedyDescending{}";
+		}
 	}
 	
 	public static class GreedyRandom implements ColorInterface {
@@ -57,6 +77,16 @@ public abstract class Greedy {
 			L.disarray();
 			
 			return Greedy.mapVertices(graph, L);
+		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			return toString().equals(Objects.toString(obj));
+		}
+		
+		@Override
+		public String toString() {
+			return "GreedyRandom{}";
 		}
 	}
 	

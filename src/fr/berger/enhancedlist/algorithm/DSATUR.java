@@ -9,6 +9,7 @@ import org.jetbrains.annotations.NotNull;
 import sun.awt.image.ImageWatched;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Objects;
 
@@ -41,36 +42,81 @@ public class DSATUR implements ColorInterface {
 		
 		L.sort((v1, v2) -> graph.getDegree(v2) - graph.getDegree(v1));
 		
-		
-		
-		// PRINT L /DEBUG\
-		/*System.out.println("DSATUR.mapVertices> L = {");
-		for (Vertex<V> v : L) {
-			System.out.println("\t" + v + " (degree = " + graph.getDegree(v) + ")");
-		}
-		System.out.println("}");*/
-		
 		Vertex<V> x = L.first();
 		L.remove(x);
 		colors.put(x, new Color(k));
 		
 		while (!L.isEmpty()) {
-			// Choose a vertex where the saturation degree is max and the degree is max too
-			x = L.first(); // As L is sorted, x has the higher degree (but maybe not the higher saturation degree)
-			// Search a vertex with the same (or higher) degree, and a higher saturation degree
-			for (int i = 0, maxi = L.size(); i < maxi; i++) {
+			// Choose a vertex in L where the saturation degree is max. If equality, choose the one with degree is max
+			x = L.first();
+			for (int i = 1, maxi = L.size(); i < maxi; i++) {
 				Vertex<V> vi = L.get(i);
-				if (!Objects.equals(x, vi) && graph.getDegree(x) <= graph.getDegree(vi))
-					if (graph.getSaturatedDegree(x) >= graph.getSaturatedDegree(vi))
+				
+				if (!Objects.equals(x, vi)) {
+					// If vi has an higher saturated degree, take it
+					if (graph.getSaturatedDegree(x, colors) < graph.getSaturatedDegree(vi, colors))
 						x = vi;
+					// If there is equality, take the one with higher degree
+					if (graph.getSaturatedDegree(x, colors) == graph.getSaturatedDegree(vi, colors) && graph.getDegree(x) < graph.getDegree(vi))
+						x = vi;
+				}
 			}
 			
 			// Now, x is the best DSAT vertex, or one of the best with the greatest degree in the graph
+			// Color x with the smallest color according to its neighbors
+			
+			Lexicon<Color> neighborsColor = new LexiconBuilder<>(Color.class)
+					.setAcceptDuplicates(false)
+					.setAcceptNullValues(false)
+					.createLexicon();
+			
+			Lexicon<Vertex<V>> neighbors = new LexiconBuilder<Vertex<V>>()
+					.setAcceptDuplicates(false)
+					.setAcceptNullValues(false)
+					.addAll(graph.getNeighbors(x))
+					.createLexicon();
+			
+			// Fill neighborsColor
+			for (Vertex<V> neighbor : neighbors) {
+				if (colors.getOrDefault(neighbor, null) != null)
+					neighborsColor.add(colors.get(neighbor));
+			}
+			
+			// Sort neighborsColor
+			neighborsColor.sort(new Comparator<Color>() {
+				@Override
+				public int compare(Color o1, Color o2) {
+					return o1.compareTo(o2);
+				}
+			});
+			
+			// Search for the smallest available color
+			long smallestColor = 0;
+			for (long i = 1; i <= k && smallestColor == 0; i++)
+				if (!neighborsColor.contains(new Color(i)))
+					smallestColor = i;
+			
+			// If there is no smallest color, add a color
+			if (smallestColor == 0) {
+				k++;
+				smallestColor = k;
+			}
+			
+			// Finally, remove the vertex from the list and color it
 			L.remove(x);
-			colors.put(x, new Color(k));
-			k++;
+			colors.put(x, new Color(smallestColor));
 		}
 		
 		return colors;
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		return toString().equals(Objects.toString(obj));
+	}
+	
+	@Override
+	public String toString() {
+		return "DSATUR{}";
 	}
 }

@@ -1,5 +1,8 @@
 fr.berger.enhancedlist
+fr.berger.enhancedlist.algorithm
 fr.berger.enhancedlist.exceptions
+fr.berger.enhancedlist.graph
+fr.berger.enhancedlist.graph.builder
 fr.berger.enhancedlist.lexicon
 fr.berger.enhancedlist.lexicon.eventhandlers
 fr.berger.enhancedlist.matrix

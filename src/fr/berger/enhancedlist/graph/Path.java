@@ -1,9 +1,7 @@
 package fr.berger.enhancedlist.graph;
 
 import fr.berger.enhancedlist.lexicon.Lexicon;
-import org.intellij.lang.annotations.JdkConstants;
 import org.jetbrains.annotations.NotNull;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -11,24 +9,24 @@ import java.util.Objects;
 
 /**
  * In graph theory, a "Path" is a list of adjacent edges. In this library, a path is a lexicon of generic edges.
- * @param <T> The generic parameter for {@code Edge}.
+ * @param <E> The generic parameter for {@code Edge}.
  * @see Lexicon
  * @see Graph
  * @see Edge
  * @author Valentin Berger
  */
-public class Path<T> extends Lexicon<Edge<T>> implements Serializable, Cloneable {
+public class Path<E> extends Lexicon<Edge<E>> implements Serializable, Cloneable {
 	
-	public Path(@NotNull Collection<Edge<T>> edges) {
+	public Path(@NotNull Collection<Edge<E>> edges) {
 		super(edges);
 		configureLexicon();
 	}
 	@SuppressWarnings("unchecked")
-	public Path(@NotNull Edge<T>... edges) {
+	public Path(@NotNull Edge<E>... edges) {
 		super(edges);
 		configureLexicon();
 	}
-	public Path(@NotNull Path<T> path) {
+	public Path(@NotNull Path<E> path) {
 		super(path);
 		configureLexicon();
 	}
@@ -92,7 +90,7 @@ public class Path<T> extends Lexicon<Edge<T>> implements Serializable, Cloneable
 	 */
 	public boolean checkPath() {
 		// Check if one of the element is null
-		for (Edge<T> e : this) {
+		for (Edge<E> e : this) {
 			if (e == null)
 				return false;
 			
@@ -104,7 +102,7 @@ public class Path<T> extends Lexicon<Edge<T>> implements Serializable, Cloneable
 		Vertex<?> previous = first().getX();
 		
 		for (int i = 0, maxi = size(); i < maxi; i++) {
-			Edge<T> currentEdge = get(i);
+			Edge<E> currentEdge = get(i);
 			if (!Objects.equals(previous, currentEdge.getX()))
 				return false;
 			
@@ -120,14 +118,14 @@ public class Path<T> extends Lexicon<Edge<T>> implements Serializable, Cloneable
 	 * @param element The element which changed in the list.
 	 * @see #checkPath()
 	 */
-	protected void verifyChangedElement(int index, Edge<T> element) {
+	protected void verifyChangedElement(int index, Edge<E> element) {
 		if (!checkPath())
 			remove(index);
 	}
 	
 	/**
 	 * Configure the lexicon by refusing null values, and verifying all changed element with "verifyChangedElement(int,
-	 * Edge&lt;T$gt;)".
+	 * Edge&lt;E$gt;)".
 	 * @see #verifyChangedElement(int, Edge)
 	 */
 	protected void configureLexicon() {

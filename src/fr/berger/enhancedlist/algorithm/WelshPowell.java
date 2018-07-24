@@ -9,6 +9,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.Objects;
 
 public abstract class WelshPowell {
 	
@@ -29,6 +30,16 @@ public abstract class WelshPowell {
 			
 			return WelshPowell.map(graph, L);
 		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			return toString().equals(Objects.toString(obj));
+		}
+		
+		@Override
+		public String toString() {
+			return "WelshPowellAscending{}";
+		}
 	}
 	
 	public static class WelshPowellDescending implements ColorInterface {
@@ -48,6 +59,16 @@ public abstract class WelshPowell {
 			
 			return WelshPowell.map(graph, L);
 		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			return toString().equals(Objects.toString(obj));
+		}
+		
+		@Override
+		public String toString() {
+			return "WelshPowellDescending{}";
+		}
 	}
 	
 	public static class WelshPowellRandom implements ColorInterface {
@@ -66,6 +87,16 @@ public abstract class WelshPowell {
 			L.disarray();
 			
 			return WelshPowell.map(graph, L);
+		}
+		
+		@Override
+		public boolean equals(Object obj) {
+			return toString().equals(Objects.toString(obj));
+		}
+		
+		@Override
+		public String toString() {
+			return "WelshPowellRandom{}";
 		}
 	}
 	

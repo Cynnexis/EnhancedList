@@ -1353,6 +1353,29 @@ public class Graph<V, E> extends EnhancedObservable implements Serializable, Clo
 		return colors.size();
 	}
 	
+	/**
+	 * Compute the saturated degree of the given vertex, with the given map vertices -> color.
+	 * The saturated degree is the number of different color that the neighbors of {@code vertex} wear. The neighbors
+	 * that does not contain any color, or their color number is less or equal to 0 are not count.
+	 * @param vertex The vertex
+	 * @param colors The list which map vertices to color, if the graph is not colored yet.
+	 * @return eturn the saturated degree. If colors is empty, return 0.
+	 */
+	public int getSaturatedDegree(@NotNull Vertex<V> vertex, HashMap<Vertex<V>, Color> colors) {
+		// colors only accept values that are not already in it. It will counts the number of colored neighbors
+		Lexicon<Color> c = new LexiconBuilder<Color>()
+				.setAcceptNullValues(false)
+				.setAcceptDuplicates(false)
+				.createLexicon();
+		
+		Lexicon<Vertex<V>> neighbors = getNeighbors(vertex);
+		for (Vertex<V> neighbor : neighbors)
+			if (colors.getOrDefault(neighbor, null) != null && colors.get(neighbor).getColorNumber() > 0)
+				c.add(colors.get(neighbor));
+		
+		return c.size();
+	}
+	
 	// TODO: NOT TESTED
 	@SuppressWarnings("ConstantConditions")
 	public void color(@NotNull ColorInterface ci) {
