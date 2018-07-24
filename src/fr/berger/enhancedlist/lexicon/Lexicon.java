@@ -34,13 +34,13 @@ import java.util.function.*;
  * @param <T> The type of the object to save in the Lexicon instance
  * @author Valentin Berger
  */
-@SuppressWarnings({"ConstantConditions", "NullableProblems"})
+@SuppressWarnings({"ConstantConditions", "NullableProblems", "WeakerAccess"})
 public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Iterable<T>, Serializable, Cloneable {
 	
 	private static final long serialVersionUID = -8760304915380000309L;
 	
 	@Nullable
-	private T[] array;
+	private Object[] array;
 	
 	@NotNull
 	private ArrayList<AddHandler<T>> addHandlers;
@@ -141,7 +141,7 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ite
 	
 	@SuppressWarnings("unchecked")
 	private void readObject(@NotNull ObjectInputStream stream) throws IOException, ClassNotFoundException {
-		array = (T[]) stream.readObject();
+		array = (Object[]) stream.readObject();
 		setAddHandlers((ArrayList<AddHandler<T>>) stream.readObject());
 		setGetHandlers((ArrayList<GetHandler<T>>) stream.readObject());
 		setSetHandlers((ArrayList<SetHandler<T>>) stream.readObject());
@@ -414,6 +414,7 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ite
 		else
 			return get_content(index);
 	}
+	@SuppressWarnings("unchecked")
 	@Nullable
 	private T get_content(int index, @Nullable T defaultValue) {
 		if (!checkArrayNullity())
@@ -424,7 +425,7 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ite
 		
 		T element;
 		try {
-			element = array[index];
+			element = (T) array[index];
 		} catch (Throwable throwable) {
 			throwable.printStackTrace();
 			return defaultValue;
@@ -433,6 +434,7 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ite
 		triggerGetHandlers(index, element);
 		return element;
 	}
+	@SuppressWarnings("unchecked")
 	@Nullable
 	private T get_content(int index) {
 		if (!checkArrayNullity())
@@ -440,7 +442,7 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ite
 		
 		ListUtil.checkIndexException(index, this);
 		
-		T element = array[index];
+		T element = (T) array[index];
 		
 		triggerGetHandlers(index, element);
 		return element;
@@ -953,9 +955,10 @@ public class Lexicon<T> extends EnhancedObservable implements Collection<T>, Ite
 		ListUtil.disarray(this);
 	}
 	
-	public synchronized void sort(@NotNull Comparator<T> comparator) {
+	@SuppressWarnings("unchecked")
+	public synchronized void sort(@NotNull Comparator<? super T> comparator) {
 		if (array != null && size() > 0)
-			Arrays.sort(array, 0, size(), comparator);
+			Arrays.sort((T[]) array, 0, size(), comparator);
 	}
 	
 	/* OVERRIDES */

@@ -3,6 +3,9 @@
     <output-path>$PROJECT_DIR$/out/artifacts/EnhancedList_jar</output-path>
     <root id="archive" name="EnhancedList.jar">
       <element id="module-output" name="EnhancedList" />
+      <element id="library" level="project" name="Arrow" />
+      <element id="library" level="project" name="BeyondCode" />
+      <element id="library" level="project" name="JetBrains Annotations" />
     </root>
   </artifact>
 </component>
